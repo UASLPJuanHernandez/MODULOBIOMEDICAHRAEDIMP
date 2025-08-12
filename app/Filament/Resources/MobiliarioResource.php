@@ -678,35 +678,6 @@ class MobiliarioResource extends Resource
                         ]);
                     }),
                     
-                Action::make('imprimirVale')
-                    ->label('Imprimir Vale')
-                    ->icon('heroicon-o-document')
-                    ->color('success')
-                    ->visible(function (Mobiliario $record) {
-                        return $record->vales->isNotEmpty();
-                    })
-                    ->action(function (Mobiliario $record) {
-                        $ultimoVale = $record->vales->first();
-                        
-                        if (!$ultimoVale) {
-                            Notification::make()
-                                ->title('Error')
-                                ->body('No hay vale asociado a este mobiliario.')
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-                        
-                        if ($ultimoVale->archivo_pdf) {
-                            // Si existe archivo PDF, descargarlo
-                            return redirect($ultimoVale->archivo_pdf);
-                        } else {
-                            // Generar PDF dinámicamente
-                            return static::generarPDFVale($ultimoVale);
-                        }
-                    })
-                    ->tooltip('Imprimir el vale asociado a este mobiliario'),
-                    
                 Action::make('verHistorial')
                     ->label('Ver Historial')
                     ->icon('heroicon-o-clock')
@@ -856,27 +827,6 @@ class MobiliarioResource extends Resource
                     $query->latest()->limit(1);
                 }
             ]);
-    }
-    
-    /**
-     * Generar PDF del vale asociado al mobiliario
-     */
-    protected static function generarPDFVale(Vale $vale)
-    {
-        try {
-            $pdfService = new PDFService();
-            $rutaArchivo = $pdfService->generarValeResguardo($vale);
-            
-            // Retornar descarga del archivo
-            return response()->download(storage_path('app/' . $rutaArchivo));
-            
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title('Error al generar PDF')
-                ->body('Ocurrió un error al generar el PDF del vale: ' . $e->getMessage())
-                ->danger()
-                ->send();
-        }
     }
     
     /**

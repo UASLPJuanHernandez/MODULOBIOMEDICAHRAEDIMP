@@ -1,0 +1,165 @@
+/* Colores personalizados para el sistema de inventario hospitalario */
+
+/* Header personalizado - Color dorado */
+.fi-topbar,
+.fi-header,
+.fi-simple-header,
+.fi-navbar {
+    background-color: #BC955C !important;
+    border-bottom-color: #BC955C !important;
+}
+
+.fi-topbar .fi-topbar-item,
+.fi-header .fi-header-item,
+.fi-navbar .fi-navbar-item {
+    color: white !important;
+}
+
+/* Navegación sidebar */
+.fi-sidebar {
+    background-color: #f8f9fa !important;
+}
+
+.fi-sidebar-nav-item-active {
+    background-color: rgba(188, 149, 92, 0.1) !important;
+    border-left: 4px solid #BC955C !important;
+}
+
+.fi-sidebar-nav-item-active .fi-sidebar-nav-item-label {
+    color: #BC955C !important;
+    font-weight: 600 !important;
+}
+
+/* Footer personalizado - Color vino */
+.fi-footer,
+.fi-simple-footer,
+footer,
+.fi-layout-footer {
+    background-color: #691C32 !important;
+    color: white !important;
+    border-top: 2px solid #691C32 !important;
+}
+
+.fi-footer p,
+.fi-footer span,
+.fi-footer a {
+    color: white !important;
+}
+
+/* Botones primarios con color dorado */
+.fi-btn-primary {
+    background-color: #BC955C !important;
+    border-color: #BC955C !important;
+}
+
+.fi-btn-primary:hover {
+    background-color: #a67f4a !important;
+    border-color: #a67f4a !important;
+}
+
+/* Enlaces de navegación */
+.fi-link-primary {
+    color: #BC955C !important;
+}
+
+.fi-link-primary:hover {
+    color: #a67f4a !important;
+}
+
+/* Badges y elementos de estado */
+.fi-badge-primary {
+    background-color: #BC955C !important;
+    color: white !important;
+}
+
+/* Iconos en la navegación */
+.fi-sidebar-nav-item-icon {
+    color: #691C32 !important;
+}
+
+.fi-sidebar-nav-item-active .fi-sidebar-nav-item-icon {
+    color: #BC955C !important;
+}
+
+/* Personalización del panel principal */
+.fi-main {
+    background-color: #fafafa !important;
+}
+
+/* Tarjetas y widgets */
+.fi-section-card,
+.fi-widget-card {
+    border: 1px solid rgba(188, 149, 92, 0.2) !important;
+}
+
+/* Tabs activos */
+.fi-tabs-tab-active {
+    border-bottom-color: #BC955C !important;
+    color: #BC955C !important;
+}
+
+/* Headers de sección */
+.fi-section-header {
+    border-bottom: 2px solid rgba(188, 149, 92, 0.3) !important;
+}
+
+/* Elementos de formulario focus */
+.fi-input:focus,
+.fi-select:focus,
+.fi-textarea:focus {
+    border-color: #BC955C !important;
+    box-shadow: 0 0 0 1px #BC955C !important;
+}
+
+/* Personalización para widgets de estadísticas */
+.fi-stats-overview-card {
+    border-left: 4px solid #BC955C !important;
+}
+
+/* Logo o título del sistema */
+.fi-logo,
+.fi-simple-header-heading {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+/* Breadcrumbs */
+.fi-breadcrumbs-item-active {
+    color: #BC955C !important;
+}
+
+/* Dropdown menus */
+.fi-dropdown-panel {
+    border: 1px solid rgba(188, 149, 92, 0.3) !important;
+}
+
+/* Modal headers */
+.fi-modal-header {
+    background-color: #BC955C !important;
+    color: white !important;
+}
+
+/* Action buttons in modals */
+.fi-modal-actions .fi-btn-primary {
+    background-color: #BC955C !important;
+}
+
+/* Success notifications with hospital colors */
+.fi-notification-success {
+    border-left: 4px solid #BC955C !important;
+}
+
+/* Footer adicional personalizado */
+.fi-layout-footer-content {
+    text-align: center !important;
+    padding: 1rem !important;
+    background-color: #691C32 !important;
+    color: white !important;
+}
+
+.fi-layout-footer-content::before {
+    content: "Sistema de Activo Fijo. Hospital Regional de Alta Especialidad Dr. Ignacio Morones Prieto";
+    display: block;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}

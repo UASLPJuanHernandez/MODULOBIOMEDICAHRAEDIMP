@@ -1,0 +1,220 @@
+<?php
+
+namespace App\Filament\Resources\MobiliarioResource\Pages;
+
+use App\Filament\Resources\MobiliarioResource;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Resources\Pages\ViewRecord;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Support\Enums\FontWeight;
+
+class ViewMobiliario extends ViewRecord
+{
+    protected static string $resource = MobiliarioResource::class;
+
+    public function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Información General')
+                    ->description('Datos principales del mobiliario')
+                    ->icon('heroicon-o-cube')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('numero_control')
+                                    ->label('Número de Control')
+                                    ->weight(FontWeight::Bold)
+                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->color('primary')
+                                    ->copyable()
+                                    ->copyMessage('Número de control copiado')
+                                    ->icon('heroicon-o-qr-code'),
+
+                                TextEntry::make('descripcion')
+                                    ->label('Descripción')
+                                    ->weight(FontWeight::Medium)
+                                    ->columnSpan(2)
+                                    ->icon('heroicon-o-document-text'),
+                            ]),
+
+                        Grid::make(4)
+                            ->schema([
+                                TextEntry::make('marca')
+                                    ->label('Marca')
+                                    ->placeholder('No especificado')
+                                    ->icon('heroicon-o-tag'),
+
+                                TextEntry::make('modelo')
+                                    ->label('Modelo')
+                                    ->placeholder('No especificado')
+                                    ->icon('heroicon-o-cpu-chip'),
+
+                                TextEntry::make('numero_serie')
+                                    ->label('Número de Serie')
+                                    ->placeholder('No especificado')
+                                    ->copyable()
+                                    ->icon('heroicon-o-hashtag'),
+
+                                TextEntry::make('estado_mobiliario')
+                                    ->label('Estado')
+                                    ->badge()
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'Nuevo' => 'success',
+                                        'Usado' => 'info',
+                                        'Baja' => 'danger',
+                                        'Restaurado' => 'warning',
+                                        default => 'gray',
+                                    })
+                                    ->icon('heroicon-o-shield-check'),
+                            ]),
+                    ]),
+
+                Section::make('Clasificación y Tipo')
+                    ->description('Categorización del mobiliario')
+                    ->icon('heroicon-o-squares-2x2')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('tipoMobiliario.tipo')
+                                    ->label('Tipo de Mobiliario')
+                                    ->badge()
+                                    ->color('info')
+                                    ->icon('heroicon-o-folder'),
+
+                                TextEntry::make('tipoMobiliario.categoria')
+                                    ->label('Categoría')
+                                    ->badge()
+                                    ->color('warning')
+                                    ->icon('heroicon-o-bookmark'),
+
+                                TextEntry::make('clasificacionBien.descripcion')
+                                    ->label('Clasificación')
+                                    ->placeholder('Sin clasificación')
+                                    ->icon('heroicon-o-clipboard-document-list'),
+                            ]),
+                    ]),
+
+                Section::make('Ubicación y Localización')
+                    ->description('Dónde se encuentra actualmente el mobiliario')
+                    ->icon('heroicon-o-map-pin')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextEntry::make('localizacion.ubicacion_resumida')
+                                    ->label('Ubicación Actual')
+                                    ->weight(FontWeight::Bold)
+                                    ->color('success')
+                                    ->icon('heroicon-o-building-office'),
+
+                                TextEntry::make('historial_ubicacion')
+                                    ->label('Historial de Ubicación')
+                                    ->formatStateUsing(fn ($record) => $record->resumenUbicacion())
+                                    ->color('gray')
+                                    ->icon('heroicon-o-clock'),
+                            ]),
+                    ]),
+
+                Section::make('Información Económica')
+                    ->description('Datos sobre adquisición y valor')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('precio')
+                                    ->label('Precio de Adquisición')
+                                    ->money('MXN')
+                                    ->icon('heroicon-o-banknotes'),
+
+                                TextEntry::make('metodo_adquisicion')
+                                    ->label('Método de Adquisición')
+                                    ->badge()
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'Compra' => 'success',
+                                        'Donación' => 'info',
+                                        'Comodato' => 'warning',
+                                        default => 'gray',
+                                    })
+                                    ->icon('heroicon-o-shopping-cart'),
+
+                                TextEntry::make('proveedor.nombre_proveedor')
+                                    ->label('Proveedor')
+                                    ->placeholder('Sin proveedor registrado')
+                                    ->icon('heroicon-o-building-storefront'),
+                            ]),
+                    ]),
+
+                Section::make('Estado y Folio')
+                    ->description('Información sobre el estado del mobiliario')
+                    ->icon('heroicon-o-document-check')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextEntry::make('dado_de_baja')
+                                    ->label('Estado del Mobiliario')
+                                    ->formatStateUsing(fn (bool $state): string => $state ? 'Dado de Baja' : 'Activo')
+                                    ->badge()
+                                    ->color(fn (bool $state): string => $state ? 'danger' : 'success')
+                                    ->icon(fn (bool $state): string => $state ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle'),
+
+                                TextEntry::make('numero_folio')
+                                    ->label('Número de Folio')
+                                    ->placeholder('Sin folio asignado')
+                                    ->visible(fn ($record) => $record->tiene_folio)
+                                    ->copyable()
+                                    ->icon('heroicon-o-document-duplicate'),
+                            ]),
+                    ]),
+
+                Section::make('Información del Sistema')
+                    ->description('Metadatos y control de versiones')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->schema([
+                        Grid::make(4)
+                            ->schema([
+                                TextEntry::make('created_at')
+                                    ->label('Creado el')
+                                    ->dateTime('d/m/Y H:i')
+                                    ->icon('heroicon-o-clock'),
+
+                                TextEntry::make('updated_at')
+                                    ->label('Última actualización')
+                                    ->dateTime('d/m/Y H:i')
+                                    ->icon('heroicon-o-arrow-path'),
+
+                                TextEntry::make('usuarioCreador.name')
+                                    ->label('Creado por')
+                                    ->placeholder('Usuario no disponible')
+                                    ->icon('heroicon-o-user-plus'),
+
+                                TextEntry::make('id')
+                                    ->label('ID del Sistema')
+                                    ->icon('heroicon-o-identification'),
+                            ]),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
+            ]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\EditAction::make()
+                ->label('Editar')
+                ->icon('heroicon-o-pencil')
+                ->color('warning'),
+                
+            Actions\DeleteAction::make()
+                ->label('Eliminar')
+                ->icon('heroicon-o-trash')
+                ->color('danger'),
+        ];
+    }
+}

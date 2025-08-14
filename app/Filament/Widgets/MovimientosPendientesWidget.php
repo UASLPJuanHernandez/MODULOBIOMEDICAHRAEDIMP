@@ -8,43 +8,64 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class MovimientosPendientesWidget extends BaseWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
-        $movimientosPendientes = Movimiento::sinVale()->count();
-        $movimientosRecientes = Movimiento::sinVale()->recientes(7)->count();
-        
-        return [
-            Stat::make('Movimientos Pendientes de Vale', $movimientosPendientes)
-                ->description('Total de movimientos sin vale generado')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color($movimientosPendientes > 0 ? 'warning' : 'success')
-                ->url(route('filament.admin.resources.movimientos.index', [
-                    'tableFilters[sin_vale][isActive]' => true
-                ])),
-                
-            Stat::make('Pendientes Últimos 7 días', $movimientosRecientes)
-                ->description('Movimientos recientes sin vale')
-                ->descriptionIcon('heroicon-m-clock')
-                ->color($movimientosRecientes > 0 ? 'danger' : 'success')
-                ->url(route('filament.admin.resources.movimientos.index', [
-                    'tableFilters[sin_vale][isActive]' => true
-                ])),
-                
-            Stat::make('Acción Requerida', $movimientosPendientes > 0 ? 'Generar Vales' : 'Todo al día')
-                ->description($movimientosPendientes > 0 ? 'Haga clic para ver movimientos pendientes' : 'No hay movimientos pendientes')
-                ->descriptionIcon($movimientosPendientes > 0 ? 'heroicon-m-document-plus' : 'heroicon-m-check-circle')
-                ->color($movimientosPendientes > 0 ? 'info' : 'success')
-                ->url($movimientosPendientes > 0 ? route('filament.admin.resources.movimientos.index') : null),
-        ];
+        try {
+            $total = Movimiento::count();
+            $pendientes = Movimiento::where(function($q){
+                $q->whereNull('vale_id')->orWhere('vale_generado', false);
+            })->count();
+            $conVale = $total - $pendientes;
+            $hoy = Movimiento::whereDate('created_at', today())->count();
+            $ult7 = Movimiento::where('created_at', '>=', now()->subDays(7))->count();
+
+            $porcentaje = $total > 0 ? round(($conVale / $total) * 100, 1) : 0;
+
+            return [
+                Stat::make('Pendientes de Vale', $pendientes)
+                    ->description('Sin vale generado')
+                    ->descriptionIcon('heroicon-m-exclamation-triangle')
+                    ->color($pendientes > 0 ? 'warning' : 'success'),
+
+                Stat::make('Con Vale', $conVale)
+                    ->description($porcentaje . '% completados')
+                    ->descriptionIcon('heroicon-m-check-circle')
+                    ->color('success'),
+
+                Stat::make('Hoy', $hoy)
+                    ->description('Generados hoy')
+                    ->descriptionIcon('heroicon-m-bolt')
+                    ->color('info'),
+
+                Stat::make('Últimos 7 días', $ult7)
+                    ->description('Actividad reciente')
+                    ->descriptionIcon('heroicon-m-clock')
+                    ->color('info'),
+
+                Stat::make('Total Movimientos', $total)
+                    ->description('En el sistema')
+                    ->descriptionIcon('heroicon-m-arrow-path')
+                    ->color('gray'),
+            ];
+        } catch (\Exception $e) {
+            return [
+                Stat::make('Error Widget Movimientos', 'N/A')
+                    ->description($e->getMessage())
+                    ->descriptionIcon('heroicon-m-x-circle')
+                    ->color('danger'),
+            ];
+        }
     }
-    
+
     protected function getColumns(): int
     {
         return 3;
     }
-    
+
     public static function canView(): bool
     {
-        return Movimiento::sinVale()->exists();
+        return true;
     }
 }

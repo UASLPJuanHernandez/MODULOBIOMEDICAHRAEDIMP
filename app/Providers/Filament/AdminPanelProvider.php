@@ -44,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 \App\Filament\Widgets\MovimientosPendientesWidget::class,
+                \App\Filament\Widgets\AdminRealtimeNotificationsWidget::class,
                 Widgets\AccountWidget::class,
             ])
             ->middleware([

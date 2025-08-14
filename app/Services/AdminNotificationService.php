@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\AdminNotificationEvent;
 use App\Models\User;
+use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Log;
 
 class AdminNotificationService
@@ -17,15 +18,21 @@ class AdminNotificationService
         Log::info("¿Es administrador? " . ($user->hasRole('Administrador') ? 'Sí' : 'No'));
         
         // Solo enviar si el usuario no es administrador
-        if (!$user->hasRole('Administrador')) {
-            Log::info('Enviando notificación en tiempo real porque el usuario NO es administrador');
-            
-            // Solo broadcast del evento en tiempo real con Laravel Reverb
-            broadcast(new AdminNotificationEvent($title, $message, $action, $user, $data));
-            Log::info('Evento broadcast enviado via Laravel Reverb');
-        } else {
-            Log::info('NO se envía notificación porque el usuario ES administrador');
+        $isAdmin = $user->hasRole('Administrador');
+        // Persistir en BD (siempre) para historial
+        $record = AdminNotification::create([
+            'title' => $title,
+            'message' => $message,
+            'action' => $action,
+            'data' => $data,
+            'user_id' => $user->id,
+        ]);
+
+        // Broadcast solo si el emisor NO es admin (para no auto-spamear) – ajustable
+        if (!$isAdmin) {
+            broadcast(new AdminNotificationEvent($title, $message, $action, $user, array_merge($data, ['notification_id' => $record->id])));
         }
+        Log::info('AdminNotification guardada y broadcast (condicional) ejecutado', ['id' => $record->id, 'broadcast' => !$isAdmin]);
     }
 
     /**

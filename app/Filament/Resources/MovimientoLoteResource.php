@@ -263,4 +263,10 @@ class MovimientoLoteResource extends Resource
             'edit' => Pages\EditMovimientoLote::route('/{record}/edit'),
         ];
     }
+
+    // Ocultar del menú de navegación de Filament
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // impedir que aparezca en el sidebar
+    }
 }

@@ -7,10 +7,10 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('admin-notifications', function ($user) {
-    // Autorizar solo a usuarios con rol admin (ajusta según tu sistema de roles)
+    // Autorizar solo a usuarios con rol Administrador (Spatie roles)
     if (method_exists($user, 'hasRole')) {
-        return $user->hasRole('admin');
+        return $user->hasRole('Administrador');
     }
-    // Fallback: permitir solo primer usuario (ID=1) si no hay roles
+    // Fallback: permitir usuario ID 1
     return (int) $user->id === 1;
 });

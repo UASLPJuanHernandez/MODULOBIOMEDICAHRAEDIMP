@@ -762,6 +762,11 @@ class MobiliarioResource extends Resource
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
                     ->action(function () {
+                        // Notificar al administrador
+                        \App\Services\AdminNotificationService::reporteGenerado(
+                            \Illuminate\Support\Facades\Auth::user(), 
+                            'Excel - Inventario Completo'
+                        );
                         return static::exportarTodosLosDatosFiltrados();
                     })
                     ->tooltip('Exportar todos los datos mostrados en la tabla actual'),
@@ -788,6 +793,11 @@ class MobiliarioResource extends Resource
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('success')
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data) {
+                            // Notificar al administrador
+                            \App\Services\AdminNotificationService::reporteGenerado(
+                                \Illuminate\Support\Facades\Auth::user(), 
+                                'Excel - Selección de ' . $records->count() . ' registros'
+                            );
                             return static::exportarExcelFiltrado($records);
                         })
                         ->tooltip('Exportar solo los registros seleccionados')

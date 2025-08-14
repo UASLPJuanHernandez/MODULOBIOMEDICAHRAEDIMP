@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('movimiento_lote_mobiliario', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('movimiento_lote_id')->constrained('movimiento_lotes')->onDelete('cascade');
+            $table->foreignId('mobiliario_id')->constrained('mobiliario')->onDelete('cascade');
+            $table->foreignId('area_anterior_id')->nullable()->constrained('localizacion')->onDelete('set null');
             $table->timestamps();
+            
+            // Índices y restricciones
+            $table->unique(['movimiento_lote_id', 'mobiliario_id'], 'mov_lote_mob_unique');
+            $table->index('movimiento_lote_id');
+            $table->index('mobiliario_id');
         });
     }
 

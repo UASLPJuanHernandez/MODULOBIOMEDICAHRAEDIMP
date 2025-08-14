@@ -1,0 +1,50 @@
+/* Fix para widgets que no se muestran debido a errores de JavaScript */
+
+/* Asegurar que los widgets se muestren */
+.fi-wi-stats-overview .fi-wi-stats-overview-grid,
+.fi-stats-overview-widget,
+.fi-wi-stats-overview,
+[data-widget] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Asegurar que las stats se muestren */
+.fi-stats-overview-widget .fi-stats-overview-widget-stat,
+.fi-stats-overview-stat {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Fix para contenedores de dashboard */
+.fi-dashboard-page .fi-section-content,
+.fi-dashboard-page .fi-section-content-ctn {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Mostrar todos los componentes de Livewire */
+[wire\\:loading] {
+    display: none !important;
+}
+
+/* Asegurar que no hay overlays que oculten contenido */
+.fi-modal-overlay,
+.fi-loading-overlay {
+    display: none !important;
+}
+
+/* Debug: añadir borde rojo a widgets para verificar que se renderizan */
+.fi-stats-overview-widget {
+    border: 2px solid red !important;
+    min-height: 100px !important;
+    background: white !important;
+}
+
+.fi-wi-stats-overview {
+    border: 2px solid blue !important;
+    min-height: 100px !important;
+    background: #f9f9f9 !important;
+}

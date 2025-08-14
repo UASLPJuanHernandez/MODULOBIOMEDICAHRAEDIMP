@@ -12,7 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vales', function (Blueprint $table) {
-            //
+            $table->foreignId('movimiento_lote_id')
+                  ->nullable()
+                  ->after('movimiento_id')
+                  ->constrained('movimiento_lotes')
+                  ->onDelete('set null');
+                  
+            $table->index('movimiento_lote_id');
         });
     }
 
@@ -22,7 +28,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('vales', function (Blueprint $table) {
-            //
+            $table->dropForeign(['movimiento_lote_id']);
+            $table->dropColumn('movimiento_lote_id');
         });
     }
 };

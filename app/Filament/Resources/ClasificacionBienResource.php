@@ -18,6 +18,12 @@ class ClasificacionBienResource extends Resource
     protected static ?string $model = ClasificacionBien::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    
+    protected static ?string $navigationLabel = 'Clasificación Bienes';
+    
+    protected static ?string $modelLabel = 'Clasificación de Bien';
+    
+    protected static ?string $pluralModelLabel = 'Clasificación Bienes';
 
     public static function form(Form $form): Form
     {

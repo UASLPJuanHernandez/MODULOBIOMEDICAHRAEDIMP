@@ -18,6 +18,12 @@ class LocalizacionResource extends Resource
     protected static ?string $model = Localizacion::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    
+    protected static ?string $navigationLabel = 'Localizaciones';
+    
+    protected static ?string $modelLabel = 'Localización';
+    
+    protected static ?string $pluralModelLabel = 'Localizaciones';
 
     public static function form(Form $form): Form
     {

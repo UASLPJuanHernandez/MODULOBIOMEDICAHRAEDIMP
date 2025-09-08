@@ -239,6 +239,12 @@ class MobiliarioResource extends Resource
                                 ->dehydrated(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Compra', 'Comodato']))
                                 ->helperText('Requerido solo para Compra y Comodato')
                                 ->createOptionForm([
+                                    Forms\Components\Select::make('partida_id')
+                                        ->label('Tipo de Partida')
+                                        ->relationship('tipoPartida', 'tipo_partida')
+                                        ->required()
+                                        ->searchable()
+                                        ->preload(),
                                     Forms\Components\TextInput::make('nombre_proveedor')
                                         ->required(),
                                     Forms\Components\TextInput::make('monto_unitario')

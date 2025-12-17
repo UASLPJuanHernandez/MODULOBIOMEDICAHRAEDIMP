@@ -24,7 +24,7 @@ return new class extends Migration
             $table->foreignId('tipo_mobiliario_id')->constrained('tipo_mobiliario')->onDelete('cascade');
             $table->foreignId('localizacion_id')->constrained('localizacion')->onDelete('cascade');
             $table->foreignId('proveedor_id')->constrained('proveedores')->onDelete('cascade');
-            $table->enum('metodo_adquisicion', ['Compra', 'Donación', 'Apoyo 55', 'Comodato', 'Prestamo', 'Propiedad UASLP']);
+            $table->enum('metodo_adquisicion', ['Compra', 'Donación', 'Apoyo SS', 'Comodato', 'Prestamo', 'Propiedad UASLP']);
             $table->decimal('depreciacion_registrada', 15, 2)->nullable();
             
             // Campos para control de concurrencia

@@ -170,6 +170,20 @@ class MobiliarioResource extends Resource
                                 ->maxLength(255),
                         ]),
                         
+                        Forms\Components\FileUpload::make('foto')
+                            ->label('Foto del Mobiliario')
+                            ->image()
+                            ->directory('mobiliarios')
+                            ->imageEditor()
+                            ->imageEditorAspectRatios([
+                                '16:9',
+                                '4:3',
+                                '1:1',
+                            ])
+                            ->maxSize(5120)
+                            ->helperText('Suba una foto del mobiliario (opcional). Tamaño máximo: 5MB')
+                            ->columnSpanFull(),
+                        
                         Grid::make(2)->schema([
                             Forms\Components\TextInput::make('precio')
                                 ->label('Precio (MXN)')
@@ -184,7 +198,7 @@ class MobiliarioResource extends Resource
                                 ->options([
                                     'Compra' => 'Compra',
                                     'Donación' => 'Donación',
-                                    'Apoyo 55' => 'Apoyo 55',
+                                    'Apoyo SS' => 'Apoyo SS',
                                     'Comodato' => 'Comodato',
                                     'Prestamo' => 'Prestamo',
                                     'Propiedad UASLP' => 'Propiedad UASLP',
@@ -203,16 +217,16 @@ class MobiliarioResource extends Resource
                                 ->label('¿Este mobiliario ya tiene asignado un número de folio?')
                                 ->reactive()
                                 ->live()
-                                ->visible(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']))
-                                ->dehydrated(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']))
-                                ->helperText('Disponible solo para: UASLP (propiedad), Apoyo 55, Préstamo, IMSS-Bienestar'),
+                                ->visible(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']))
+                                ->dehydrated(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']))
+                                ->helperText('Disponible solo para: UASLP (propiedad), Apoyo SS, Préstamo, IMSS-Bienestar'),
                                 
                             Forms\Components\TextInput::make('numero_folio')
                                 ->label('Número de Folio')
                                 ->maxLength(100)
-                                ->required(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']))
-                                ->visible(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']))
-                                ->dehydrated(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']))
+                                ->required(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']))
+                                ->visible(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']))
+                                ->dehydrated(fn (Get $get) => $get('tiene_folio') && in_array($get('metodo_adquisicion'), ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']))
                                 ->placeholder('Ingrese el número de folio asignado')
                                 ->helperText('Campo requerido cuando se indica que ya tiene folio asignado'),
                         ]),
@@ -239,6 +253,12 @@ class MobiliarioResource extends Resource
                                 ->dehydrated(fn (Get $get) => in_array($get('metodo_adquisicion'), ['Compra', 'Comodato']))
                                 ->helperText('Requerido solo para Compra y Comodato')
                                 ->createOptionForm([
+                                    Forms\Components\Select::make('partida_id')
+                                        ->label('Tipo de Partida')
+                                        ->relationship('tipoPartida', 'tipo_partida')
+                                        ->required()
+                                        ->searchable()
+                                        ->preload(),
                                     Forms\Components\TextInput::make('nombre_proveedor')
                                         ->required(),
                                     Forms\Components\TextInput::make('monto_unitario')
@@ -265,6 +285,48 @@ class MobiliarioResource extends Resource
                             ->step(0.01)
                             ->placeholder('Opcional'),
                     ]),
+
+                Section::make('Asignación de Responsable')
+                    ->description('Los datos del responsable se usarán para generar automáticamente el vale de resguardo')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Forms\Components\TextInput::make('responsable_entrega')
+                                ->label('Responsable de Entrega')
+                                ->required()
+                                ->maxLength(255)
+                                ->helperText('Nombre completo de quien entrega el mobiliario'),
+                                
+                            Forms\Components\TextInput::make('matricula_entrega')
+                                ->label('Matrícula de quien Entrega')
+                                ->maxLength(255)
+                                ->helperText('Matrícula o identificación de quien entrega'),
+                                
+                            Forms\Components\TextInput::make('responsable_recibe')
+                                ->label('Responsable que Recibe')
+                                ->required()
+                                ->maxLength(255)
+                                ->helperText('Nombre completo del responsable del resguardo'),
+                                
+                            Forms\Components\TextInput::make('matricula_recibe')
+                                ->label('Matrícula de quien Recibe')
+                                ->maxLength(255)
+                                ->helperText('Matrícula o identificación del responsable'),
+                        ]),
+                        
+                        Forms\Components\DatePicker::make('fecha_asignacion')
+                            ->label('Fecha de Asignación')
+                            ->default(now())
+                            ->required()
+                            ->helperText('Fecha en que se asigna el mobiliario al responsable'),
+                        
+                        Forms\Components\Textarea::make('observaciones_vale')
+                            ->label('Observaciones para el Vale')
+                            ->rows(3)
+                            ->columnSpanFull()
+                            ->helperText('Observaciones adicionales que se incluirán en el vale de resguardo'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false),
             ]);
     }
 
@@ -272,6 +334,19 @@ class MobiliarioResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\IconColumn::make('en_mantenimiento')
+                    ->label('')
+                    ->icon(fn (Mobiliario $record) => 
+                        $record->tieneMantenimientosActivos() ? 'heroicon-o-wrench-screwdriver' : null
+                    )
+                    ->color('warning')
+                    ->size(Tables\Columns\IconColumn\IconColumnSize::Large)
+                    ->tooltip(fn (Mobiliario $record) => 
+                        $record->tieneMantenimientosActivos() 
+                            ? '⚠️ EQUIPO EN MANTENIMIENTO - No se puede editar ni modificar' 
+                            : null
+                    ),
+                    
                 Tables\Columns\TextColumn::make('numero_control')
                     ->label('Número de Control')
                     ->searchable()
@@ -314,6 +389,63 @@ class MobiliarioResource extends Resource
                         'Equipo no Médico' => 'info',
                         default => 'gray',
                     }),
+                    
+                Tables\Columns\TextColumn::make('estado_mantenimiento')
+                    ->label('Mantenimiento')
+                    ->formatStateUsing(function ($record) {
+                        if ($record->tieneMantenimientosActivos()) {
+                            $pendientes = $record->mantenimientosPendientes();
+                            $aceptados = $record->mantenimientosAceptados();
+                            
+                            if ($aceptados > 0) {
+                                return "En proceso ({$aceptados})";
+                            }
+                            return "Pendiente ({$pendientes})";
+                        }
+                        
+                        $total = $record->totalMantenimientos();
+                        if ($total > 0) {
+                            return "Completados ({$total})";
+                        }
+                        
+                        return 'Sin historial';
+                    })
+                    ->badge()
+                    ->color(function ($record) {
+                        if ($record->tieneMantenimientosActivos()) {
+                            return $record->mantenimientosAceptados() > 0 ? 'info' : 'warning';
+                        }
+                        
+                        return $record->totalMantenimientos() > 0 ? 'success' : 'gray';
+                    })
+                    ->icon(function ($record) {
+                        if ($record->tieneMantenimientosActivos()) {
+                            return 'heroicon-o-wrench-screwdriver';
+                        }
+                        
+                        return $record->totalMantenimientos() > 0 ? 'heroicon-o-check-badge' : 'heroicon-o-minus';
+                    })
+                    ->tooltip(function ($record) {
+                        $resumen = $record->resumenMantenimientos();
+                        
+                        if ($resumen['total'] === 0) {
+                            return 'Este equipo no tiene historial de mantenimientos';
+                        }
+                        
+                        $tooltip = "Total: {$resumen['total']} mantenimientos\n";
+                        $tooltip .= "Pendientes: {$resumen['por_estado']['pendiente']}\n";
+                        $tooltip .= "En proceso: {$resumen['por_estado']['aceptado']}\n";
+                        $tooltip .= "Completados: {$resumen['por_estado']['completado']}\n";
+                        $tooltip .= "Con vales: {$resumen['con_vales']}";
+                        
+                        if ($resumen['ultimo_mantenimiento']) {
+                            $tooltip .= "\nÚltimo: " . $resumen['ultimo_mantenimiento']->format('d/m/Y');
+                        }
+                        
+                        return $tooltip;
+                    })
+                    ->toggleable()
+                    ->sortable(false),
                     
                 Tables\Columns\TextColumn::make('localizacion.direccion')
                     ->label('Dirección')
@@ -393,7 +525,7 @@ class MobiliarioResource extends Resource
                     ->label('Número de Folio')
                     ->placeholder('Sin folio')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->visible(fn ($record) => $record && in_array($record->metodo_adquisicion, ['Propiedad UASLP', 'Apoyo 55', 'Prestamo', 'IMSS-Bienestar']) && $record->tiene_folio),
+                    ->visible(fn ($record) => $record && in_array($record->metodo_adquisicion, ['Propiedad UASLP', 'Apoyo SS', 'Prestamo', 'IMSS-Bienestar']) && $record->tiene_folio),
                     
                 Tables\Columns\TextColumn::make('estado_mobiliario')
                     ->label('Estado')
@@ -503,7 +635,7 @@ class MobiliarioResource extends Resource
                     ->options([
                         'Compra' => 'Compra',
                         'Donación' => 'Donación',
-                        'Apoyo 55' => 'Apoyo 55',
+                        'Apoyo SS' => 'Apoyo SS',
                         'Comodato' => 'Comodato',
                         'Prestamo' => 'Prestamo',
                         'Propiedad UASLP' => 'Propiedad UASLP',
@@ -652,6 +784,84 @@ class MobiliarioResource extends Resource
                     ->preload(),
             ])
             ->actions([
+                Action::make('mantenimiento')
+                    ->label('Mantenimiento')
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->color('warning')
+                    ->disabled(fn (Mobiliario $record) => $record->tieneMantenimientosActivos())
+                    ->tooltip(fn (Mobiliario $record) => 
+                        $record->tieneMantenimientosActivos() 
+                            ? 'Este equipo ya tiene un mantenimiento activo' 
+                            : null
+                    )
+                    ->form([
+                        Forms\Components\DateTimePicker::make('fecha_programada')
+                            ->label('Fecha y Hora de Mantenimiento')
+                            ->required()
+                            ->default(now()->addDay())
+                            ->minDate(now())
+                            ->displayFormat('d/m/Y H:i'),
+                            
+                        Forms\Components\Textarea::make('motivo')
+                            ->label('Motivo del Mantenimiento')
+                            ->required()
+                            ->rows(4)
+                            ->placeholder('Describe el problema o motivo por el cual requiere mantenimiento...'),
+                            
+                        Forms\Components\Select::make('tipo_mantenimiento')
+                            ->label('Tipo de Mantenimiento')
+                            ->options([
+                                'mantenimiento' => 'Mantenimiento Interno',
+                                'proveedor' => 'Enviar con Proveedor Externo',
+                            ])
+                            ->required()
+                            ->default('mantenimiento')
+                            ->reactive(),
+                            
+                        Forms\Components\TextInput::make('proveedor_nombre')
+                            ->label('Nombre del Proveedor')
+                            ->placeholder('Ingresa el nombre del proveedor...')
+                            ->visible(fn (Forms\Get $get) => $get('tipo_mantenimiento') === 'proveedor')
+                            ->required(fn (Forms\Get $get) => $get('tipo_mantenimiento') === 'proveedor'),
+                    ])
+                    ->action(function (array $data, Mobiliario $record) {
+                        // Obtener datos del mobiliario y su ubicación actual
+                        $ubicacionActual = $record->ubicacionReal();
+                        
+                        // Crear solicitud de mantenimiento
+                        $mantenimiento = \App\Models\Mantenimiento::create([
+                            'mobiliario_id' => $record->id,
+                            'fecha_programada' => $data['fecha_programada'],
+                            'motivo' => $data['motivo'],
+                            'tipo_mantenimiento' => $data['tipo_mantenimiento'],
+                            'proveedor_nombre' => $data['proveedor_nombre'] ?? null,
+                            'usuario_solicitante_id' => \Illuminate\Support\Facades\Auth::id(),
+                        ]);
+                        
+                        // Notificar éxito
+                        Notification::make()
+                            ->title('Solicitud de Mantenimiento Creada')
+                            ->body("Solicitud creada para {$record->numero_control}. Se enviará a Órdenes de Servicio.")
+                            ->success()
+                            ->send();
+                            
+                        // Notificar al administrador
+                        \App\Services\AdminNotificationService::mantenimientoSolicitado(
+                            \Illuminate\Support\Facades\Auth::user(),
+                            $record,
+                            $mantenimiento
+                        );
+                    })
+                    ->modalHeading('Solicitar Mantenimiento')
+                    ->modalDescription(fn (Mobiliario $record) => 
+                        "Equipo: {$record->numero_control}\n" .
+                        "Descripción: {$record->descripcion}\n" .
+                        "Ubicación: " . ($record->ubicacionReal()['area'] ?? 'Sin ubicación') . "\n" .
+                        "Responsable: " . ($record->ubicacionReal()['responsable'] ?? 'Sin responsable')
+                    )
+                    ->modalSubmitActionLabel('Crear Solicitud')
+                    ->visible(fn (Mobiliario $record) => !$record->dado_de_baja),
+                    
                 Action::make('generateQR')
                     ->label('Generar QR')
                     ->icon('heroicon-o-qr-code')
@@ -712,10 +922,36 @@ class MobiliarioResource extends Resource
                     ->modalWidth('5xl')
                     ->slideOver(),
                     
+                Action::make('verHistorialMantenimientos')
+                    ->label('Historial Mantenimientos')
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->color('warning')
+                    ->modalHeading(fn (Mobiliario $record) => 'Historial de Mantenimientos - ' . $record->numero_control)
+                    ->modalContent(function (Mobiliario $record) {
+                        // Obtener todos los mantenimientos con relaciones
+                        $mantenimientos = $record->mantenimientos()
+                            ->with(['usuarioSolicitante', 'usuarioMantenimiento'])
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+                            
+                        return view('historial-mantenimientos', [
+                            'mantenimientos' => $mantenimientos,
+                            'record' => $record
+                        ]);
+                    })
+                    ->modalWidth('6xl')
+                    ->slideOver(),
+                    
                 Action::make('dar_de_baja')
                     ->label('Dar de Baja')
                     ->icon('heroicon-o-archive-box')
                     ->color('danger')
+                    ->disabled(fn (Mobiliario $record) => $record->tieneMantenimientosActivos())
+                    ->tooltip(fn (Mobiliario $record) => 
+                        $record->tieneMantenimientosActivos() 
+                            ? 'No se puede dar de baja un equipo en mantenimiento' 
+                            : null
+                    )
                     ->form([
                         Forms\Components\DateTimePicker::make('fecha_baja')
                             ->label('Fecha de Baja')
@@ -754,7 +990,13 @@ class MobiliarioResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->label('Editar')
                     ->icon('heroicon-o-pencil')
-                    ->color('warning'),
+                    ->color('warning')
+                    ->disabled(fn (Mobiliario $record) => $record->tieneMantenimientosActivos())
+                    ->tooltip(fn (Mobiliario $record) => 
+                        $record->tieneMantenimientosActivos() 
+                            ? 'No se puede editar un equipo en mantenimiento activo' 
+                            : null
+                    ),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('exportarTodosLosFiltrados')
@@ -808,7 +1050,17 @@ class MobiliarioResource extends Resource
             ->persistSearchInSession()
             ->persistFiltersInSession()
             ->striped()
-            ->searchOnBlur();
+            ->searchOnBlur()
+            ->recordClasses(fn (Mobiliario $record) => 
+                $record->tieneMantenimientosActivos() 
+                    ? 'opacity-50 bg-yellow-50 dark:bg-yellow-900/10' 
+                    : null
+            )
+            ->recordAction(fn (Mobiliario $record) => 
+                $record->tieneMantenimientosActivos() 
+                    ? null 
+                    : Tables\Actions\ViewAction::class
+            );
     }
 
     public static function getRelations(): array

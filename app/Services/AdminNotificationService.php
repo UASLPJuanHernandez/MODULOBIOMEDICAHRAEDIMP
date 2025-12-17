@@ -132,4 +132,37 @@ class AdminNotificationService
             'tipo_reporte' => $tipoReporte,
         ]);
     }
+
+    /**
+     * Notificación para solicitud de mantenimiento
+     */
+    public static function mantenimientoSolicitado(User $user, $mobiliario, $mantenimiento): void
+    {
+        $title = 'Nueva Solicitud de Mantenimiento';
+        $tipoTexto = $mantenimiento->tipo_mantenimiento === 'proveedor' ? 'con proveedor externo' : 'interno';
+        $message = "El usuario {$user->name} ha solicitado mantenimiento {$tipoTexto} para el equipo: {$mobiliario->numero_control} - {$mobiliario->descripcion}";
+        
+        self::notify($title, $message, 'mantenimiento.solicitado', $user, [
+            'mantenimiento_id' => $mantenimiento->id,
+            'mobiliario_id' => $mobiliario->id,
+            'numero_control' => $mobiliario->numero_control,
+            'tipo_mantenimiento' => $mantenimiento->tipo_mantenimiento,
+        ]);
+    }
+
+    /**
+     * Notificación para mantenimiento aceptado
+     */
+    public static function mantenimientoAceptado(User $user, $mobiliario, $mantenimiento): void
+    {
+        $title = 'Mantenimiento Aceptado';
+        $message = "El usuario {$user->name} ha aceptado la solicitud de mantenimiento para el equipo: {$mobiliario->numero_control} - Vale: {$mantenimiento->folio_vale}";
+        
+        self::notify($title, $message, 'mantenimiento.aceptado', $user, [
+            'mantenimiento_id' => $mantenimiento->id,
+            'mobiliario_id' => $mobiliario->id,
+            'numero_control' => $mobiliario->numero_control,
+            'folio_vale' => $mantenimiento->folio_vale,
+        ]);
+    }
 }

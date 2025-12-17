@@ -172,6 +172,138 @@ class ViewMobiliario extends ViewRecord
                             ]),
                     ]),
 
+                Section::make('Historial de Mantenimientos')
+                    ->description('Mantenimientos realizados a este equipo')
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->schema([
+                        TextEntry::make('mantenimientos_stats')
+                            ->label('Estadísticas')
+                            ->formatStateUsing(function ($record) {
+                                $total = $record->totalMantenimientos();
+                                $pendientes = $record->mantenimientosPendientes();
+                                $aceptados = $record->mantenimientosAceptados();
+                                $completados = $record->mantenimientos()->where('estado', 'completados')->count();
+                                
+                                if ($total === 0) {
+                                    return 'No hay mantenimientos registrados';
+                                }
+                                
+                                return "Total: {$total} | Pendientes: {$pendientes} | Aceptados: {$aceptados} | Completados: {$completados}";
+                            })
+                            ->icon('heroicon-o-chart-bar'),
+                            
+                        TextEntry::make('ultimo_mantenimiento_info')
+                            ->label('Último Mantenimiento')
+                            ->formatStateUsing(function ($record) {
+                                $ultimo = $record->ultimoMantenimiento;
+                                
+                                if (!$ultimo) {
+                                    return 'Nunca se ha realizado mantenimiento';
+                                }
+                                
+                                $dias = $record->diasSinMantenimiento();
+                                return "Completado hace {$dias} días ({$ultimo->fecha_completado->format('d/m/Y')})";
+                            })
+                            ->icon('heroicon-o-clock'),
+                            
+                        TextEntry::make('mantenimientos_activos')
+                            ->label('Estado Actual')
+                            ->formatStateUsing(function ($record) {
+                                if ($record->tieneMantenimientosActivos()) {
+                                    return 'Tiene mantenimientos en proceso';
+                                }
+                                return 'Sin mantenimientos pendientes';
+                            })
+                            ->badge()
+                            ->color(function ($record) {
+                                return $record->tieneMantenimientosActivos() ? 'warning' : 'success';
+                            })
+                            ->icon(function ($record) {
+                                return $record->tieneMantenimientosActivos() ? 'heroicon-o-exclamation-triangle' : 'heroicon-o-check-circle';
+                            }),
+
+                        RepeatableEntry::make('mantenimientosOrdenados')
+                            ->label('Historial Detallado')
+                            ->schema([
+                                Grid::make(3)
+                                    ->schema([
+                                        TextEntry::make('folio_vale')
+                                            ->label('Folio Vale')
+                                            ->placeholder('Sin folio')
+                                            ->copyable()
+                                            ->url(fn ($state, $record) => 
+                                                $record->folio_vale ? route('mantenimiento.vale.pdf', $record) : null
+                                            )
+                                            ->openUrlInNewTab()
+                                            ->icon('heroicon-o-document-text'),
+                                            
+                                        TextEntry::make('estado')
+                                            ->badge()
+                                            ->color(fn (string $state): string => match ($state) {
+                                                'pendiente' => 'warning',
+                                                'aceptado' => 'success', 
+                                                'completado' => 'info',
+                                                'rechazado' => 'danger',
+                                                default => 'gray',
+                                            }),
+                                            
+                                        TextEntry::make('tipo_mantenimiento')
+                                            ->label('Tipo')
+                                            ->formatStateUsing(fn (string $state): string => 
+                                                $state === 'mantenimiento' ? 'Interno' : 'Proveedor'
+                                            )
+                                            ->badge()
+                                            ->color(fn (string $state): string => 
+                                                $state === 'mantenimiento' ? 'info' : 'secondary'
+                                            ),
+                                    ]),
+                                    
+                                Grid::make(2)
+                                    ->schema([
+                                        TextEntry::make('motivo')
+                                            ->label('Motivo')
+                                            ->limit(100),
+                                            
+                                        TextEntry::make('observaciones')
+                                            ->label('Observaciones')
+                                            ->placeholder('Sin observaciones')
+                                            ->limit(100),
+                                    ]),
+                                    
+                                Grid::make(3)
+                                    ->schema([
+                                        TextEntry::make('fecha_programada')
+                                            ->label('Programado')
+                                            ->dateTime('d/m/Y H:i'),
+                                            
+                                        TextEntry::make('fecha_aceptacion')
+                                            ->label('Aceptado')
+                                            ->placeholder('No aceptado')
+                                            ->dateTime('d/m/Y H:i'),
+                                            
+                                        TextEntry::make('fecha_completado')
+                                            ->label('Completado')
+                                            ->placeholder('No completado')
+                                            ->dateTime('d/m/Y H:i'),
+                                    ]),
+                                    
+                                Grid::make(2)
+                                    ->schema([
+                                        TextEntry::make('usuarioSolicitante.name')
+                                            ->label('Solicitado por'),
+                                            
+                                        TextEntry::make('usuarioMantenimiento.name')
+                                            ->label('Asignado a')
+                                            ->placeholder('Sin asignar'),
+                                    ]),
+                            ])
+                            ->contained(false)
+                            ->columns(1)
+                            ->visible(fn ($record) => $record->totalMantenimientos() > 0),
+                    ])
+                    ->collapsible()
+                    ->collapsed(fn ($record) => $record->totalMantenimientos() === 0),
+
                 Section::make('Información del Sistema')
                     ->description('Metadatos y control de versiones')
                     ->icon('heroicon-o-cog-6-tooth')

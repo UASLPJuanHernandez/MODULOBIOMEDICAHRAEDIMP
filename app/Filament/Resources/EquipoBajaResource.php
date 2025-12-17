@@ -554,7 +554,7 @@ class EquipoBajaResource extends Resource
                     ->options([
                         'Compra' => 'Compra',
                         'Donación' => 'Donación',
-                        'Apoyo 55' => 'Apoyo 55',
+                        'Apoyo SS' => 'Apoyo SS',
                         'Comodato' => 'Comodato',
                         'Prestamo' => 'Prestamo',
                         'Propiedad UASLP' => 'Propiedad UASLP',

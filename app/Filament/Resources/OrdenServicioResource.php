@@ -30,6 +30,8 @@ class OrdenServicioResource extends Resource
     protected static ?string $modelLabel = 'Orden de Servicio';
 
     protected static ?string $navigationGroup = 'Mantenimiento';
+    
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?int $navigationSort = 1;
 

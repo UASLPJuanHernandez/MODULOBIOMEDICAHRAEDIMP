@@ -25,6 +25,24 @@ Route::get('/admin/login', function() {
 Route::get('/vale/{vale}/imprimir', [ValeController::class, 'mostrarVista'])
     ->name('vale.imprimir');
 
+// Ruta para generar vale PDF de mantenimiento
+Route::get('/mantenimiento/{mantenimiento}/vale-pdf', [App\Http\Controllers\MantenimientoController::class, 'generarValePDF'])
+    ->name('mantenimiento.vale.pdf')
+    ->middleware('auth');
+
+// Rutas para Auditorías
+Route::get('/auditoria/{auditoria}/ejecutar', function ($auditoria) {
+    return redirect()->route('filament.admin.resources.auditorias.ejecutar', ['record' => $auditoria]);
+})->name('auditoria.ejecutar')->middleware('auth');
+
+Route::get('/auditoria/{auditoria}/vale/{item}/pdf', [App\Http\Controllers\AuditoriaController::class, 'generarValePDF'])
+    ->name('auditoria.vale.pdf')
+    ->middleware('auth');
+
+Route::get('/auditoria/{auditoria}/reporte-pdf', [App\Http\Controllers\AuditoriaController::class, 'generarReportePDF'])
+    ->name('auditoria.reporte.pdf')
+    ->middleware('auth');
+
 // Rutas para Filament Admin
 Route::get('/admin/vales/create-from-movimiento/{movimiento_id}', function ($movimiento_id) {
     return redirect()->route('filament.admin.resources.vales.create', [

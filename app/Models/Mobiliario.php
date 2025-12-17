@@ -27,6 +27,7 @@ class Mobiliario extends Model
         'marca',
         'modelo',
         'numero_serie',
+        'foto',
         'precio',
         'tipo_mobiliario_id',
         'localizacion_id',
@@ -172,6 +173,87 @@ class Mobiliario extends Model
     public function ordenesServicio(): HasMany
     {
         return $this->hasMany(OrdenServicio::class);
+    }
+
+    public function mantenimientos(): HasMany
+    {
+        return $this->hasMany(Mantenimiento::class);
+    }
+
+    public function mantenimientosOrdenados(): HasMany
+    {
+        return $this->hasMany(Mantenimiento::class)->orderBy('created_at', 'desc');
+    }
+
+    public function mantenimientosCompletados(): HasMany
+    {
+        return $this->hasMany(Mantenimiento::class)
+            ->where('estado', 'completado')
+            ->orderBy('fecha_completado', 'desc');
+    }
+
+    public function ultimoMantenimiento()
+    {
+        return $this->hasOne(Mantenimiento::class)
+            ->where('estado', 'completado')
+            ->latest('fecha_completado');
+    }
+
+    // Métodos de estadísticas
+    public function totalMantenimientos(): int
+    {
+        return $this->mantenimientos()->count();
+    }
+
+    public function mantenimientosPendientes(): int
+    {
+        return $this->mantenimientos()->where('estado', 'pendiente')->count();
+    }
+
+    public function mantenimientosAceptados(): int
+    {
+        return $this->mantenimientos()->where('estado', 'aceptado')->count();
+    }
+
+    public function tieneMantenimientosActivos(): bool
+    {
+        return $this->mantenimientos()
+            ->whereIn('estado', ['pendiente', 'aceptado'])
+            ->exists();
+    }
+
+    public function diasSinMantenimiento(): ?int
+    {
+        $ultimoMantenimiento = $this->ultimoMantenimiento;
+        
+        if (!$ultimoMantenimiento) {
+            return null;
+        }
+        
+        return $ultimoMantenimiento->fecha_completado->diffInDays(now());
+    }
+
+    public function resumenMantenimientos(): array
+    {
+        $mantenimientos = $this->mantenimientos()->get();
+        
+        return [
+            'total' => $mantenimientos->count(),
+            'por_estado' => [
+                'pendiente' => $mantenimientos->where('estado', 'pendiente')->count(),
+                'aceptado' => $mantenimientos->where('estado', 'aceptado')->count(),
+                'completado' => $mantenimientos->where('estado', 'completado')->count(),
+                'rechazado' => $mantenimientos->where('estado', 'rechazado')->count(),
+            ],
+            'por_tipo' => [
+                'interno' => $mantenimientos->where('tipo_mantenimiento', 'mantenimiento')->count(),
+                'proveedor' => $mantenimientos->where('tipo_mantenimiento', 'proveedor')->count(),
+            ],
+            'ultimo_mantenimiento' => $this->ultimoMantenimiento?->fecha_completado,
+            'dias_sin_mantenimiento' => $this->diasSinMantenimiento(),
+            'tiene_activos' => $this->tieneMantenimientosActivos(),
+            'con_vales' => $mantenimientos->whereNotNull('folio_vale')->count(),
+        ];
     }
 
     public function usuarioBloqueo(): BelongsTo

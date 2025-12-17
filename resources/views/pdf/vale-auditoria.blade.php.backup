@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vale de Auditoría - {{ $item->folio_vale }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c5aa0;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .folio {
+            text-align: right;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .alert-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .alert-box h3 {
+            margin: 0 0 5px 0;
+            color: #856404;
+            font-size: 16px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            font-size: 14px;
+            background-color: #f0f0f0;
+            padding: 8px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        
+        .info-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-label, .info-value {
+            display: table-cell;
+            padding: 8px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            background-color: #f9f9f9;
+            width: 35%;
+        }
+        
+        .info-value {
+            width: 65%;
+        }
+        
+        .info-section {
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 3px;
+        }
+        .label {
+            font-weight: bold;
+            min-width: 150px;
+        }
+        .value {
+            flex: 1;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .signatures {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 45%;
+            text-align: center;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 40px;
+            padding-top: 5px;
+        }
+        
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">SISTEMA DE ACTIVO FIJO</div>
+        <div class="title">VALE DE AUDITORÍA - MOBILIARIO NO LOCALIZADO</div>
+        <div>No. {{ $item->folio_vale }}</div>
+    </div>
+    
+    <!-- Alerta -->
+    <div class="alert-box">
+        <h3>⚠️ MOBILIARIO NO ENCONTRADO EN UBICACIÓN ASIGNADA</h3>
+        <p style="margin: 5px 0 0 0; font-size: 11px;">Este vale documenta la ausencia del mobiliario durante la auditoría</p>
+    </div>
+    
+    <!-- Información de la Auditoría -->
+    <div class="section">
+        <div class="section-title">INFORMACIÓN DE LA AUDITORÍA</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Fecha de Auditoría:</div>
+                <div class="info-value">{{ $auditoria->fecha_inicio->format('d/m/Y H:i') }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Ubicación Auditada:</div>
+                <div class="info-value">{{ $auditoria->ubicacion->ubicacion_completa }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Auditor:</div>
+                <div class="info-value">{{ $auditoria->usuario->name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Responsable del Área:</div>
+                <div class="info-value">{{ $auditoria->responsable_nombre }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Equipo -->
+    <div class="section">
+        <div class="section-title">INFORMACIÓN DEL MOBILIARIO NO LOCALIZADO</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Número de Control:</div>
+                <div class="info-value"><strong>{{ $mobiliario->numero_control }}</strong></div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Número de Inventario:</div>
+                <div class="info-value">{{ $mobiliario->numero_inventario }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Descripción:</div>
+                <div class="info-value">{{ $mobiliario->descripcion }}</div>
+            </div>
+            @if($mobiliario->marca)
+            <div class="info-row">
+                <div class="info-label">Marca:</div>
+                <div class="info-value">{{ $mobiliario->marca }}</div>
+            </div>
+            @endif
+            @if($mobiliario->modelo)
+            <div class="info-row">
+                <div class="info-label">Modelo:</div>
+                <div class="info-value">{{ $mobiliario->modelo }}</div>
+            </div>
+            @endif
+            @if($mobiliario->numero_serie)
+            <div class="info-row">
+                <div class="info-label">Número de Serie:</div>
+                <div class="info-value">{{ $mobiliario->numero_serie }}</div>
+            </div>
+            @endif
+            <div class="info-row">
+                <div class="info-label">Ubicación Registrada:</div>
+                <div class="info-value">{{ $mobiliario->localizacion->ubicacion_completa ?? 'Sin ubicación' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detalles de la Verificación -->
+    <div class="section">
+        <div class="section-title">DETALLES DE LA VERIFICACIÓN</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Fecha de Verificación:</div>
+                <div class="info-value">{{ $item->fecha_verificacion ? $item->fecha_verificacion->format('d/m/Y H:i') : 'No verificado' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Estado:</div>
+                <div class="info-value">
+                    <strong style="color: #dc3545;">❌ NO LOCALIZADO</strong>
+                </div>
+            </div>
+            @if($item->comentarios)
+            <div class="info-row">
+                <div class="info-label">Comentarios:</div>
+                <div class="info-value">{{ $item->comentarios }}</div>
+            </div>
+            @endif
+        </div>
+    </div>
+    
+    <!-- Sección de Acciones -->
+    <div class="section">
+        <div class="section-title">ACCIONES A REALIZAR</div>
+        <div style="padding: 10px; background-color: #fff; border: 1px solid #ccc;">
+            <p style="margin: 0 0 10px 0;">☐ Localizar el mobiliario en otras ubicaciones</p>
+            <p style="margin: 0 0 10px 0;">☐ Actualizar ubicación en el sistema</p>
+            <p style="margin: 0 0 10px 0;">☐ Investigar posible extravío o sustracción</p>
+            <p style="margin: 0 0 10px 0;">☐ Iniciar proceso administrativo según corresponda</p>
+            <p style="margin: 0;">☐ Reportar a la Dirección General</p>
+        </div>
+    </div>
+    
+    <!-- Firmas -->
+    <div class="signatures">
+        <div class="signature-box">
+            <div class="signature-line">
+                <strong>AUDITOR</strong><br>
+                {{ $auditoria->usuario->name }}<br>
+                Encargado de Activo Fijo
+            </div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">
+                <strong>RESPONSABLE DEL ÁREA</strong><br>
+                {{ $auditoria->responsable_nombre }}<br>
+                {{ $auditoria->ubicacion->ubicacion_completa }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Documento generado el {{ now()->format('d/m/Y H:i') }} por el Sistema de Activo Fijo del Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
+        <p>Este documento es válido sin firma autógrafa conforme a las disposiciones vigentes</p>
+    </div>
+</body>
+</html>

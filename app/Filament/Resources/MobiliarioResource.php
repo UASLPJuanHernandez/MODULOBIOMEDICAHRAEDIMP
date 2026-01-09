@@ -333,6 +333,7 @@ class MobiliarioResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['vales' => fn($q) => $q->latest()->limit(1)]))
             ->columns([
                 Tables\Columns\IconColumn::make('en_mantenimiento')
                     ->label('')
@@ -542,44 +543,43 @@ class MobiliarioResource extends Resource
                     ->toggleable(),
                     
                 // Columnas del Vale asociado
-                Tables\Columns\TextColumn::make('ultimo_vale_tipo')
+                Tables\Columns\TextColumn::make('vales.tipo_vale')
                     ->label('Tipo Vale')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->getStateUsing(function ($record) {
+                        $ultimoVale = $record->vales->first();
+                        return $ultimoVale ? $ultimoVale->tipo_vale : null;
+                    })
+                    ->color(fn ($state): string => match ($state) {
                         'Entrega' => 'success',
                         'Devolución' => 'warning',
                         'Transferencia' => 'info',
                         default => 'gray',
                     })
                     ->placeholder('Sin vale')
-                    ->formatStateUsing(function ($record) {
-                        $ultimoVale = $record->vales->first();
-                        return $ultimoVale ? $ultimoVale->tipo_vale : 'Sin vale';
-                    })
                     ->toggleable(),
                     
-                Tables\Columns\TextColumn::make('vale_responsable')
+                Tables\Columns\TextColumn::make('vales.responsable')
                     ->label('Responsable Vale')
-                    ->formatStateUsing(function ($record) {
+                    ->getStateUsing(function ($record) {
                         $ultimoVale = $record->vales->first();
-                        if (!$ultimoVale) return 'Sin vale';
+                        if (!$ultimoVale) return null;
                         
-                        $responsable = $ultimoVale->responsable_recibe ?: $ultimoVale->responsable_entrega;
-                        return $responsable ?: 'Sin responsable';
+                        return $ultimoVale->responsable_recibe ?: $ultimoVale->responsable_entrega;
                     })
                     ->placeholder('Sin responsable')
                     ->toggleable(),
                     
-                Tables\Columns\TextColumn::make('ultimo_vale_fecha')
+                Tables\Columns\TextColumn::make('vales.fecha_generacion')
                     ->label('Fecha Vale')
-                    ->date()
-                    ->formatStateUsing(function ($record) {
+                    ->date('d/m/Y')
+                    ->getStateUsing(function ($record) {
                         $ultimoVale = $record->vales->first();
                         return $ultimoVale ? $ultimoVale->fecha_generacion : null;
                     })
                     ->placeholder('Sin vale')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),                Tables\Columns\TextColumn::make('created_at')
+                    ->toggleable(),                Tables\Columns\TextColumn::make('created_at')
                     ->label('Registrado')
                     ->dateTime()
                     ->sortable()

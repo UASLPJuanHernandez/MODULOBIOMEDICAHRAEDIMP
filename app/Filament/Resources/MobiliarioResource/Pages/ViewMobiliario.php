@@ -18,6 +18,14 @@ class ViewMobiliario extends ViewRecord
 {
     protected static string $resource = MobiliarioResource::class;
 
+    public function mount(int | string $record): void
+    {
+        parent::mount($record);
+        
+        // Cargar las relaciones necesarias
+        $this->record->load(['vales', 'valesMultiples', 'mantenimientos']);
+    }
+
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist
@@ -303,6 +311,170 @@ class ViewMobiliario extends ViewRecord
                     ])
                     ->collapsible()
                     ->collapsed(fn ($record) => $record->totalMantenimientos() === 0),
+
+                Section::make('Vales de Resguardo')
+                    ->description('Vales de resguardo asociados a este mobiliario')
+                    ->icon('heroicon-o-document-text')
+                    ->schema([
+                        TextEntry::make('vales_stats')
+                            ->label('Resumen')
+                            ->formatStateUsing(function ($record) {
+                                $record->load(['vales', 'valesMultiples']);
+                                $totalVales = $record->vales->count();
+                                $totalValesMultiples = $record->valesMultiples->count();
+                                $total = $totalVales + $totalValesMultiples;
+                                
+                                if ($total === 0) {
+                                    return 'No hay vales de resguardo registrados';
+                                }
+                                
+                                return "Total de vales: {$total} (Individuales: {$totalVales} | Múltiples: {$totalValesMultiples})";
+                            })
+                            ->icon('heroicon-o-document-duplicate')
+                            ->badge()
+                            ->color(function ($record) {
+                                $record->load(['vales', 'valesMultiples']);
+                                return ($record->vales->count() + $record->valesMultiples->count()) > 0 ? 'success' : 'gray';
+                            }),
+
+                        RepeatableEntry::make('vales')
+                            ->label('Vales Individuales')
+                            ->schema([
+                                TextEntry::make('numero_vale')
+                                    ->label('Folio Vale')
+                                    ->weight(FontWeight::Bold)
+                                    ->size(TextEntry\TextEntrySize::Medium)
+                                    ->copyable()
+                                    ->url(fn ($record) => route('vale.imprimir', $record))
+                                    ->openUrlInNewTab()
+                                    ->color('primary')
+                                    ->icon('heroicon-o-document-arrow-down')
+                                    ->tooltip('Clic para ver PDF del vale')
+                                    ->columnSpanFull(),
+                            ])
+                            ->contained(false)
+                            ->columns(1)
+                            ->visible(function ($record) {
+                                $record->load('vales');
+                                return $record->vales->count() > 0;
+                            }),
+                            
+                        RepeatableEntry::make('valesMultiples')
+                            ->label('Vales Múltiples (parte de un vale con varios mobiliarios)')
+                            ->schema([
+                                TextEntry::make('numero_vale')
+                                    ->label('Folio Vale')
+                                    ->weight(FontWeight::Bold)
+                                    ->size(TextEntry\TextEntrySize::Medium)
+                                    ->copyable()
+                                    ->url(fn ($record) => route('vale.imprimir', $record))
+                                    ->openUrlInNewTab()
+                                    ->color('primary')
+                                    ->icon('heroicon-o-document-arrow-down')
+                                    ->tooltip('Clic para ver PDF del vale')
+                                    ->columnSpanFull(),
+                            ])
+                            ->contained(false)
+                            ->columns(1)
+                            ->visible(function ($record) {
+                                $record->load('valesMultiples');
+                                return $record->valesMultiples->count() > 0;
+                            }),
+                    ])
+                    ->collapsible()
+                    ->collapsed(function ($record) {
+                        $record->load(['vales', 'valesMultiples']);
+                        return ($record->vales->count() + $record->valesMultiples->count()) === 0;
+                    }),
+
+                Section::make('Vales de Mantenimiento')
+                    ->description('Vales generados para mantenimientos')
+                    ->icon('heroicon-o-wrench')
+                    ->schema([
+                        TextEntry::make('vales_mantenimiento_stats')
+                            ->label('Resumen')
+                            ->formatStateUsing(function ($record) {
+                                $record->load('mantenimientos');
+                                $totalValesMantenimiento = $record->mantenimientos
+                                    ->whereNotNull('folio_vale')
+                                    ->count();
+                                
+                                if ($totalValesMantenimiento === 0) {
+                                    return 'No hay vales de mantenimiento generados';
+                                }
+                                
+                                return "Total de vales de mantenimiento: {$totalValesMantenimiento}";
+                            })
+                            ->icon('heroicon-o-document')
+                            ->badge()
+                            ->color(function ($record) {
+                                $record->load('mantenimientos');
+                                return $record->mantenimientos->whereNotNull('folio_vale')->count() > 0 ? 'info' : 'gray';
+                            }),
+
+                        RepeatableEntry::make('mantenimientos')
+                            ->label('Vales de Mantenimiento Generados')
+                            ->schema([
+                                TextEntry::make('folio_vale')
+                                    ->label('Folio Vale')
+                                    ->weight(FontWeight::Bold)
+                                    ->size(TextEntry\TextEntrySize::Medium)
+                                    ->copyable()
+                                    ->url(fn ($state, $record) => 
+                                        $record->folio_vale ? route('mantenimiento.vale.pdf', $record) : null
+                                    )
+                                    ->openUrlInNewTab()
+                                    ->color('primary')
+                                    ->icon('heroicon-o-document-arrow-down')
+                                    ->tooltip('Clic para ver PDF del vale')
+                                    ->columnSpanFull(),
+                            ])
+                            ->contained(false)
+                            ->columns(1)
+                            ->visible(function ($record) {
+                                $record->load('mantenimientos');
+                                return $record->mantenimientos->whereNotNull('folio_vale')->count() > 0;
+                            }),
+                    ])
+                    ->collapsible()
+                    ->collapsed(function ($record) {
+                        $record->load('mantenimientos');
+                        return $record->mantenimientos->whereNotNull('folio_vale')->count() === 0;
+                    }),
+
+                Section::make('Información de Baja')
+                    ->description('Detalles del proceso de baja si aplica')
+                    ->icon('heroicon-o-x-circle')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextEntry::make('dado_de_baja')
+                                    ->label('Estado de Baja')
+                                    ->formatStateUsing(fn (bool $state): string => $state ? 'DADO DE BAJA' : 'ACTIVO')
+                                    ->badge()
+                                    ->color(fn (bool $state): string => $state ? 'danger' : 'success')
+                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->weight(FontWeight::Bold)
+                                    ->icon(fn (bool $state): string => $state ? 'heroicon-o-exclamation-triangle' : 'heroicon-o-check-circle'),
+                                    
+                                TextEntry::make('fecha_baja')
+                                    ->label('Fecha de Baja')
+                                    ->placeholder('No aplica')
+                                    ->date('d/m/Y')
+                                    ->visible(fn ($record) => $record->dado_de_baja)
+                                    ->icon('heroicon-o-calendar'),
+                            ]),
+                            
+                        TextEntry::make('motivo_baja')
+                            ->label('Motivo de Baja')
+                            ->placeholder('No especificado')
+                            ->visible(fn ($record) => $record->dado_de_baja)
+                            ->columnSpanFull()
+                            ->icon('heroicon-o-document-text'),
+                    ])
+                    ->visible(fn ($record) => $record->dado_de_baja)
+                    ->collapsible()
+                    ->collapsed(false),
 
                 Section::make('Información del Sistema')
                     ->description('Metadatos y control de versiones')

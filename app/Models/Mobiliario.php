@@ -21,6 +21,7 @@ class Mobiliario extends Model
 
     protected $fillable = [
         'numero_control',
+        'numero_inventario',
         'clasificacion_bienes_id',
         'caracteristicas',
         'descripcion',

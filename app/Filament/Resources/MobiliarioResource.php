@@ -78,6 +78,15 @@ class MobiliarioResource extends Resource
                                 ->columnSpan(1),
                         ]),
                         
+                        Grid::make(1)->schema([
+                            Forms\Components\TextInput::make('numero_inventario')
+                                ->label('Número de Inventario (Anterior)')
+                                ->maxLength(255)
+                                ->placeholder('Ej: 2023-HRAE-456 (opcional, solo si ya tenía número asignado)')
+                                ->helperText('Número de inventario del sistema anterior (Excel). Dejar vacío para equipos nuevos.')
+                                ->columnSpan(1),
+                        ]),
+                        
                         Grid::make(2)->schema([
                             Forms\Components\Select::make('clasificacion_bienes_id')
                                 ->label('Clasificación de Bienes')
@@ -354,6 +363,14 @@ class MobiliarioResource extends Resource
                     ->sortable()
                     ->copyable()
                     ->weight('bold'),
+                    
+                Tables\Columns\TextColumn::make('numero_inventario')
+                    ->label('Núm. Inventario')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->placeholder('Sin número')
+                    ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('descripcion')
                     ->label('Descripción')

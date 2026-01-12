@@ -90,7 +90,7 @@ class MobiliarioExport implements FromCollection, WithHeadings, WithMapping, Wit
                 $row[] = $mobiliario->descripcion ?? 'N/A';
             }
             if (in_array('numero_inventario', $this->selectedFields)) {
-                $row[] = $mobiliario->numero_control ?? 'N/A';
+                $row[] = $mobiliario->numero_inventario ?? 'Sin número';
             }
             if (in_array('marca', $this->selectedFields)) {
                 $row[] = $mobiliario->marca ?? 'N/A';

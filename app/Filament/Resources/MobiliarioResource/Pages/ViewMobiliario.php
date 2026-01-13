@@ -12,6 +12,7 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Support\Enums\FontWeight;
 
 class ViewMobiliario extends ViewRecord
@@ -83,6 +84,53 @@ class ViewMobiliario extends ViewRecord
                                     ->icon('heroicon-o-shield-check'),
                             ]),
                     ]),
+
+                Section::make('Foto y Código QR')
+                    ->description('Imagen del mobiliario y código QR para identificación')
+                    ->icon('heroicon-o-camera')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                ImageEntry::make('foto')
+                                    ->label('Foto del Mobiliario')
+                                    ->circular(false)
+                                    ->height(200)
+                                    ->width(200)
+                                    ->visibility('public')
+                                    ->defaultImageUrl('https://via.placeholder.com/200x200/e5e7eb/6b7280?text=Sin+Foto')
+                                    ->columnSpan(1),
+                                    
+                                Grid::make(1)
+                                    ->schema([
+                                        TextEntry::make('qr_code')
+                                            ->label('Código QR')
+                                            ->formatStateUsing(function ($record) {
+                                                return '<img src="' . $record->getQrDataUri() . '" alt="QR Code" class="mx-auto" style="width: 200px; height: 200px;" />';
+                                            })
+                                            ->html(),
+                                            
+                                        Infolists\Components\Actions::make([
+                                            Infolists\Components\Actions\Action::make('descargarQR')
+                                                ->label('Descargar QR')
+                                                ->icon('heroicon-o-arrow-down-tray')
+                                                ->color('info')
+                                                ->action(function ($record) {
+                                                    $qrCode = $record->generarQR();
+                                                    
+                                                    return response()->streamDownload(function () use ($qrCode) {
+                                                        echo $qrCode;
+                                                    }, 'QR_' . $record->numero_control . '.png', [
+                                                        'Content-Type' => 'image/png',
+                                                    ]);
+                                                })
+                                                ->tooltip('Descargar código QR en formato PNG'),
+                                        ]),
+                                    ])
+                                    ->columnSpan(1),
+                            ]),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false),
 
                 Section::make('Clasificación y Tipo')
                     ->description('Categorización del mobiliario')

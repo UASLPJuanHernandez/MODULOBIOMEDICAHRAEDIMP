@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class Mobiliario extends Model
 {
@@ -371,10 +373,38 @@ class Mobiliario extends Model
         $contenido = $this->numero_control . ' - ' . $this->descripcion;
         
         if ($this->tipoMobiliario->tipo === 'Equipo Médico') {
-            $contenido = $this->numero_control . ' - ' . $this->marca . ' - ' . $this->numero_serie . ' - ' . $this->descripcion;
+            $numero_serie = $this->numero_serie ?: 'S/N';
+            $contenido = $this->numero_control . ' - ' . $this->marca . ' - ' . $numero_serie . ' - ' . $this->descripcion;
         }
 
-        return $contenido;
+        $qrCode = QrCode::create($contenido)
+            ->setSize(300)
+            ->setMargin(10);
+        
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
+        
+        return $result->getString();
+    }
+    
+    // Método para obtener el QR como Data URI (base64) para mostrar en HTML
+    public function getQrDataUri(): string
+    {
+        $contenido = $this->numero_control . ' - ' . $this->descripcion;
+        
+        if ($this->tipoMobiliario->tipo === 'Equipo Médico') {
+            $numero_serie = $this->numero_serie ?: 'S/N';
+            $contenido = $this->numero_control . ' - ' . $this->marca . ' - ' . $numero_serie . ' - ' . $this->descripcion;
+        }
+
+        $qrCode = QrCode::create($contenido)
+            ->setSize(200)
+            ->setMargin(10);
+        
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
+        
+        return $result->getDataUri();
     }
 
     // Métodos auxiliares

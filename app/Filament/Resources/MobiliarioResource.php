@@ -175,8 +175,9 @@ class MobiliarioResource extends Resource
                                 
                             Forms\Components\TextInput::make('numero_serie')
                                 ->label('Número de Serie')
-                                ->required()
-                                ->maxLength(255),
+                                ->maxLength(255)
+                                ->placeholder('Opcional - Dejar vacío si no aplica')
+                                ->helperText('Solo si el mobiliario cuenta con número de serie'),
                         ]),
                         
                         Forms\Components\FileUpload::make('foto')
@@ -395,7 +396,9 @@ class MobiliarioResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->toggleable()
-                    ->copyable(),
+                    ->copyable()
+                    ->placeholder('Sin número de serie')
+                    ->color(fn ($state) => $state ? null : 'gray'),
                     
                 Tables\Columns\TextColumn::make('tipoMobiliario.tipo')
                     ->label('Tipo')
@@ -1261,7 +1264,7 @@ class MobiliarioResource extends Resource
             $sheet->setCellValue('B' . $row, $record->descripcion);
             $sheet->setCellValue('C' . $row, $record->marca);
             $sheet->setCellValue('D' . $row, $record->modelo);
-            $sheet->setCellValue('E' . $row, $record->numero_serie);
+            $sheet->setCellValue('E' . $row, $record->numero_serie ?: 'Sin número de serie');
             $sheet->setCellValue('F' . $row, $record->tipoMobiliario?->tipo ?? 'N/A');
             $sheet->setCellValue('G' . $row, $record->tipoMobiliario?->categoria ?? 'N/A');
             $sheet->setCellValue('H' . $row, '$' . number_format($record->precio, 2));

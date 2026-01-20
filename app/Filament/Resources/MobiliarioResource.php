@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\MobiliarioResource\Pages;
+use App\Filament\Imports\MobiliarioImporter;
 use App\Models\Mobiliario;
 use App\Models\ClasificacionBien;
 use App\Models\TipoMobiliario;

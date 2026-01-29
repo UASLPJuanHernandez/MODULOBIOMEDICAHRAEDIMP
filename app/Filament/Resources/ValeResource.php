@@ -29,6 +29,21 @@ class ValeResource extends Resource
     protected static ?string $navigationLabel = 'Vales de Resguardo';
 
     protected static ?string $pluralModelLabel = 'Vales de Resguardo';
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
 
     protected static ?string $modelLabel = 'Vale de Resguardo';
 

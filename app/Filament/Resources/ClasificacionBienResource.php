@@ -15,6 +15,20 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ClasificacionBienResource extends Resource
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
     protected static ?string $model = ClasificacionBien::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

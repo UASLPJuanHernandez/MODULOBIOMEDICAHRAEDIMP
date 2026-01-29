@@ -29,6 +29,11 @@ class GenerarReportes extends Page implements HasForms
     
     protected static ?string $title = 'Generador de Reportes de Mobiliario';
     
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
     protected static string $view = 'filament.pages.generar-reportes';
 
     public ?array $data = [];

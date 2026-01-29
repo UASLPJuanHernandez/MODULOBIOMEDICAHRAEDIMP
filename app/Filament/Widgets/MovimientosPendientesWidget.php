@@ -66,6 +66,6 @@ class MovimientosPendientesWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return true;
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
     }
 }

@@ -10,7 +10,8 @@ use Filament\Widgets\Widget;
 class AdminRealtimeNotificationsWidget extends Widget
 {
     protected static string $view = 'filament.widgets.admin-realtime-notifications';
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 3;
+    protected int | string | array $columnSpan = 'full';
 
     public ?int $unreadCount = null;
     public array $latest = [];

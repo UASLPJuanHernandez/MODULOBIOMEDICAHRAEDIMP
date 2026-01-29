@@ -3,9 +3,11 @@
 namespace App\Filament\Imports;
 
 use App\Models\Mobiliario;
+use App\Services\AdminNotificationService;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Facades\Auth;
 
 class MobiliarioImporter extends Importer
 {
@@ -25,7 +27,10 @@ class MobiliarioImporter extends Importer
                 ->label('Número de Inventario')
                 ->rules(['nullable', 'max:255'])
                 ->example('INV-2024-001')
-                ->guess(['numero inventario', 'no. inventario', 'inventario']),
+                ->guess(['numero inventario', 'no. inventario', 'inventario'])
+                ->castStateUsing(function (?string $state): ?string {
+                    return blank($state) ? null : $state;
+                }),
             
             ImportColumn::make('clasificacion_bienes_id')
                 ->label('ID Clasificación de Bienes')
@@ -66,7 +71,10 @@ class MobiliarioImporter extends Importer
                 ->label('Número de Serie')
                 ->rules(['nullable', 'max:255'])
                 ->example('SN123456789')
-                ->guess(['numero serie', 'no. serie', 'serie']),
+                ->guess(['numero serie', 'no. serie', 'serie'])
+                ->castStateUsing(function (?string $state): ?string {
+                    return blank($state) ? null : $state;
+                }),
             
             ImportColumn::make('precio')
                 ->label('Precio')
@@ -74,7 +82,7 @@ class MobiliarioImporter extends Importer
                 ->numeric(decimalPlaces: 2)
                 ->rules(['required', 'numeric', 'min:0'])
                 ->example('15000.00')
-                ->castStateUsing(function (string $state): ?float {
+                ->castStateUsing(function (?string $state): ?float {
                     if (blank($state)) {
                         return null;
                     }
@@ -105,27 +113,48 @@ class MobiliarioImporter extends Importer
                 ->label('ID Proveedor')
                 ->numeric()
                 ->relationship(resolveUsing: 'id')
-                ->rules(['nullable', 'integer', 'exists:proveedor,id'])
+                ->rules(['nullable', 'integer'])
                 ->example('1')
-                ->helperText('ID del proveedor (opcional)'),
+                ->helperText('ID del proveedor (opcional)')
+                ->castStateUsing(function (?string $state): ?int {
+                    if (blank($state) || $state === '0') {
+                        return null;
+                    }
+                    return (int) $state;
+                }),
             
             ImportColumn::make('metodo_adquisicion')
                 ->label('Método de Adquisición')
                 ->rules(['nullable', 'max:255'])
                 ->example('Compra directa'),
             
+            ImportColumn::make('donante')
+                ->label('Donante')
+                ->rules(['nullable', 'max:255'])
+                ->example('Fundación XYZ')
+                ->guess(['donante', 'donador', 'quien dona']),
+            
             ImportColumn::make('tiene_folio')
                 ->label('Tiene Folio')
                 ->boolean()
-                ->rules(['required', 'boolean'])
+                ->rules(['nullable', 'boolean'])
                 ->example('1')
-                ->guess(['tiene folio', 'folio']),
+                ->guess(['tiene folio', 'folio'])
+                ->castStateUsing(function (?string $state): bool {
+                    if (blank($state)) {
+                        return false;
+                    }
+                    return in_array(strtolower($state), ['1', 'true', 'yes', 'sí', 'si', 'verdadero']);
+                }),
             
             ImportColumn::make('numero_folio')
                 ->label('Número de Folio')
                 ->rules(['nullable', 'max:255'])
                 ->example('FOL-2024-001')
-                ->guess(['numero folio', 'no. folio']),
+                ->guess(['numero folio', 'no. folio'])
+                ->castStateUsing(function (?string $state): ?string {
+                    return blank($state) ? null : $state;
+                }),
             
             ImportColumn::make('estado_mobiliario')
                 ->label('Estado del Mobiliario')
@@ -138,30 +167,61 @@ class MobiliarioImporter extends Importer
             ImportColumn::make('tiene_accesorios')
                 ->label('Tiene Accesorios')
                 ->boolean()
-                ->rules(['required', 'boolean'])
+                ->rules(['nullable', 'boolean'])
                 ->example('0')
-                ->guess(['tiene accesorios', 'accesorios']),
+                ->guess(['tiene accesorios', 'accesorios'])
+                ->castStateUsing(function (?string $state): bool {
+                    if (blank($state)) {
+                        return false;
+                    }
+                    return in_array(strtolower($state), ['1', 'true', 'yes', 'sí', 'si', 'verdadero']);
+                }),
             
             ImportColumn::make('descripcion_accesorios')
                 ->label('Descripción de Accesorios')
                 ->rules(['nullable'])
-                ->example('Mouse y teclado inalámbrico'),
+                ->example('Mouse y teclado inalámbrico')
+                ->castStateUsing(function (?string $state): ?string {
+                    return blank($state) ? null : $state;
+                }),
             
             ImportColumn::make('dado_de_baja')
                 ->label('Dado de Baja')
                 ->boolean()
                 ->rules(['nullable', 'boolean'])
-                ->example('0'),
+                ->example('0')
+                ->castStateUsing(function (?string $state): bool {
+                    if (blank($state)) {
+                        return false;
+                    }
+                    return in_array(strtolower($state), ['1', 'true', 'yes', 'sí', 'si', 'verdadero']);
+                }),
             
             ImportColumn::make('fecha_baja')
                 ->label('Fecha de Baja')
-                ->rules(['nullable', 'date'])
-                ->example('2024-12-31'),
+                ->rules(['nullable'])
+                ->example('2024-12-31')
+                ->castStateUsing(function (?string $state): ?string {
+                    if (blank($state)) {
+                        return null;
+                    }
+                    // Intentar parsear la fecha
+                    try {
+                        $fecha = \Carbon\Carbon::parse($state);
+                        return $fecha->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Si falla el parseo, retornar null silenciosamente
+                        return null;
+                    }
+                }),
             
             ImportColumn::make('motivo_baja')
                 ->label('Motivo de Baja')
                 ->rules(['nullable'])
-                ->example('Equipo obsoleto'),
+                ->example('Equipo obsoleto')
+                ->castStateUsing(function (?string $state): ?string {
+                    return blank($state) ? null : $state;
+                }),
         ];
     }
 
@@ -191,10 +251,25 @@ class MobiliarioImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'La importación de mobiliario ha finalizado y ' . number_format($import->successful_rows) . ' ' . str('registro')->plural($import->successful_rows) . ' fueron importados exitosamente.';
-
-        if ($failedRowsCount = $import->getFailedRowsCount()) {
-            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('registro')->plural($failedRowsCount) . ' fallaron al importar.';
+        $exitosos = $import->successful_rows;
+        $fallidos = $import->getFailedRowsCount();
+        
+        $body = '📦 La importación de mobiliario ha finalizado.\n\n';
+        $body .= '✅ Registros exitosos: ' . number_format($exitosos) . '\n';
+        
+        if ($fallidos > 0) {
+            $body .= '❌ Registros fallidos: ' . number_format($fallidos) . '\n';
+            $body .= '\n📄 Puedes descargar el archivo con los errores para corregirlos.';
+        }
+        
+        // Enviar notificación al administrador
+        if (Auth::check()) {
+            AdminNotificationService::importacionCompletada(
+                Auth::user(),
+                'Mobiliario',
+                $exitosos,
+                $fallidos
+            );
         }
 
         return $body;

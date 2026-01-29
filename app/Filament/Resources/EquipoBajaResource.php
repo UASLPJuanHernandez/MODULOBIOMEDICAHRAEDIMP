@@ -40,6 +40,21 @@ class EquipoBajaResource extends Resource
     
     protected static ?string $pluralLabel = 'Equipos Dados de Baja';
     
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
     public static function exportarExcelFiltrado($records, $filename = null)
     {
         $filename = $filename ?: 'equipos_dados_de_baja_filtrados_' . now()->format('Y-m-d_H-i-s') . '.xlsx';

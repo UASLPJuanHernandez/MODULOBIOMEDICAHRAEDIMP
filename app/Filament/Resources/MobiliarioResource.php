@@ -48,6 +48,21 @@ class MobiliarioResource extends Resource
     
     protected static ?string $navigationLabel = 'Inventario';
     
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
     protected static ?string $modelLabel = 'Mobiliario';
     
     protected static ?string $pluralModelLabel = 'Mobiliario';
@@ -221,6 +236,15 @@ class MobiliarioResource extends Resource
                                 ->reactive()
                                 ->live(),
                         ]),
+                        
+                        // Campo donante (condicional para Donación)
+                        Forms\Components\TextInput::make('donante')
+                            ->label('Donante')
+                            ->maxLength(255)
+                            ->required(fn (Get $get) => $get('metodo_adquisicion') === 'Donación')
+                            ->visible(fn (Get $get) => $get('metodo_adquisicion') === 'Donación')
+                            ->placeholder('Ingrese el nombre del donante')
+                            ->helperText('Especifique quién está donando el mobiliario'),
                         
                         // Funcionalidad condicional para número de folio
                         Grid::make(1)->schema([
@@ -536,6 +560,14 @@ class MobiliarioResource extends Resource
                         default => 'gray',
                     }),
                     
+                Tables\Columns\TextColumn::make('donante')
+                    ->label('Donante')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('Sin especificar')
+                    ->visible(fn ($record) => $record && $record->metodo_adquisicion === 'Donación'),
+                    
                 Tables\Columns\TextColumn::make('proveedor.nombre_proveedor')
                     ->label('Proveedor')
                     ->searchable()
@@ -600,7 +632,29 @@ class MobiliarioResource extends Resource
                     })
                     ->placeholder('Sin vale')
                     ->sortable()
-                    ->toggleable(),                Tables\Columns\TextColumn::make('created_at')
+                    ->toggleable(),
+                    
+                // Información del Responsable Actual (del sistema anterior)
+                Tables\Columns\TextColumn::make('responsable_actual')
+                    ->label('Responsable Actual')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('Sin responsable')
+                    ->toggleable(),
+                    
+                Tables\Columns\TextColumn::make('matricula_responsable')
+                    ->label('Matrícula Responsable')
+                    ->searchable()
+                    ->placeholder('Sin matrícula')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                Tables\Columns\TextColumn::make('puesto_responsable')
+                    ->label('Puesto Responsable')
+                    ->searchable()
+                    ->placeholder('Sin puesto')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
+                Tables\Columns\TextColumn::make('created_at')
                     ->label('Registrado')
                     ->dateTime()
                     ->sortable()

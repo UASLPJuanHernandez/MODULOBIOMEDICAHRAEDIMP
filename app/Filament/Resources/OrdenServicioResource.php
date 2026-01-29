@@ -30,10 +30,13 @@ class OrdenServicioResource extends Resource
     protected static ?string $modelLabel = 'Orden de Servicio';
 
     protected static ?string $navigationGroup = 'Mantenimiento';
-    
-    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?int $navigationSort = 1;
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // Deshabilitado - se usa MantenimientoResource en su lugar
+    }
 
     public static function form(Form $form): Form
     {

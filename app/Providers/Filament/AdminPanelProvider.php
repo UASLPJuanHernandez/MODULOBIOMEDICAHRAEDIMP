@@ -43,6 +43,7 @@ class AdminPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->widgets([
+                \App\Filament\Widgets\OrdenesServicioWidget::class,
                 \App\Filament\Widgets\MovimientosPendientesWidget::class,
                 \App\Filament\Widgets\AdminRealtimeNotificationsWidget::class,
                 Widgets\AccountWidget::class,

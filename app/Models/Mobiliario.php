@@ -21,36 +21,50 @@ class Mobiliario extends Model
 
     protected $table = 'mobiliario';
 
-    protected $fillable = [
-        'numero_control',
-        'numero_inventario',
-        'clasificacion_bienes_id',
-        'caracteristicas',
-        'descripcion',
-        'marca',
-        'modelo',
-        'numero_serie',
-        'foto',
-        'precio',
-        'tipo_mobiliario_id',
-        'localizacion_id',
-        'proveedor_id',
-        'metodo_adquisicion',
-        'tiene_folio',
-        'numero_folio',
-        'estado_mobiliario',
-        'tiene_accesorios',
-        'descripcion_accesorios',
-        'dado_de_baja',
-        'fecha_baja',
-        'motivo_baja',
-        'depreciacion_registrada',
-        'version',
-        'locked_by',
-        'locked_at',
-        'created_by',
-        'updated_by',
+    // Bloquear SOLO las columnas del CSV que no existen en la tabla
+    // Cuando usas $guarded, NO uses $fillable
+    protected $guarded = [
+        'clave_bien', 'nombre_bien', 'grupo', 'subgrupo', 'clase',
+        'color', 'no_factura', 'proveedor', 
+        'fecha_factura', 'fecha_registro', 'ubicacion',
+        'procedencia', 'direccion', 'division', 'departamento',
+        'responsable', 'clave_empleado', 'puesto', 'valor'
     ];
+
+    // protected $fillable = [
+    //     'numero_control',
+    //     'numero_inventario',
+    //     'clasificacion_bienes_id',
+    //     'caracteristicas',
+    //     'descripcion',
+    //     'marca',
+    //     'modelo',
+    //     'numero_serie',
+    //     'foto',
+    //     'precio',
+    //     'tipo_mobiliario_id',
+    //     'localizacion_id',
+    //     'proveedor_id',
+    //     'metodo_adquisicion',
+    //     'donante',
+    //     'tiene_folio',
+    //     'numero_folio',
+    //     'estado_mobiliario',
+    //     'tiene_accesorios',
+    //     'descripcion_accesorios',
+    //     'dado_de_baja',
+    //     'fecha_baja',
+    //     'motivo_baja',
+    //     'depreciacion_registrada',
+    //     'responsable_actual',
+    //     'matricula_responsable',
+    //     'puesto_responsable',
+    //     'version',
+    //     'locked_by',
+    //     'locked_at',
+    //     'created_by',
+    //     'updated_by',
+    // ];
 
     protected $casts = [
         'precio' => 'decimal:2',
@@ -58,7 +72,7 @@ class Mobiliario extends Model
         'tiene_accesorios' => 'boolean',
         'tiene_folio' => 'boolean',
         'dado_de_baja' => 'boolean',
-        'fecha_baja' => 'datetime',
+        // 'fecha_baja' => 'datetime', // Comentado para permitir importación - se maneja en procesarEstadoMobiliario()
         'version' => 'integer',
         'locked_at' => 'datetime',
     ];

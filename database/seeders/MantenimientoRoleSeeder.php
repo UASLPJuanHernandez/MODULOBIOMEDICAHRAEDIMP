@@ -6,6 +6,8 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class MantenimientoRoleSeeder extends Seeder
 {
@@ -20,10 +22,15 @@ class MantenimientoRoleSeeder extends Seeder
         // Crear permisos específicos para mantenimiento
         $permissions = [
             'view_mantenimientos',
+            'create_mantenimientos',
+            'edit_mantenimientos',
             'aceptar_mantenimientos', 
             'completar_mantenimientos',
             'rechazar_mantenimientos',
             'generar_vales_mantenimiento',
+            'view ordenes servicio',
+            'create ordenes servicio',
+            'edit ordenes servicio',
         ];
         
         foreach ($permissions as $permission) {
@@ -39,6 +46,21 @@ class MantenimientoRoleSeeder extends Seeder
             $adminRole->givePermissionTo($permissions);
         }
         
+        // Crear usuario de mantenimiento por defecto
+        $mantenimiento = User::firstOrCreate(
+            ['email' => 'mantenimiento@inventario.hospital'],
+            [
+                'name' => 'Personal de Mantenimiento',
+                'password' => Hash::make('mantenimiento123'),
+            ]
+        );
+        
+        // Asignar rol si no lo tiene
+        if (!$mantenimiento->hasRole('Personal de Mantenimiento')) {
+            $mantenimiento->assignRole('Personal de Mantenimiento');
+        }
+        
         echo "Roles y permisos de mantenimiento creados exitosamente.\n";
+        echo "Usuario creado: mantenimiento@inventario.hospital (Password: mantenimiento123)\n";
     }
 }

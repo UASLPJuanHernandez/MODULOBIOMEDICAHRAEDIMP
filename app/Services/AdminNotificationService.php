@@ -165,4 +165,32 @@ class AdminNotificationService
             'folio_vale' => $mantenimiento->folio_vale,
         ]);
     }
-}
+    /**
+     * Notificación para inicio de importación
+     */
+    public static function importacionIniciada(User $user, string $tipoImportacion, int $totalFilas): void
+    {
+        $title = 'Importación Iniciada';
+        $message = "El usuario {$user->name} ha iniciado una importación de {$tipoImportacion} con {$totalFilas} registros.";
+        
+        self::notify($title, $message, 'importacion.iniciada', $user, [
+            'tipo_importacion' => $tipoImportacion,
+            'total_filas' => $totalFilas,
+        ]);
+    }
+
+    /**
+     * Notificación para importación completada
+     */
+    public static function importacionCompletada(User $user, string $tipoImportacion, int $exitosos, int $fallidos): void
+    {
+        $title = $fallidos > 0 ? 'Importación Completada con Errores' : 'Importación Completada Exitosamente';
+        $message = "La importación de {$tipoImportacion} realizada por {$user->name} ha finalizado. Exitosos: {$exitosos}, Fallidos: {$fallidos}.";
+        
+        self::notify($title, $message, 'importacion.completada', $user, [
+            'tipo_importacion' => $tipoImportacion,
+            'registros_exitosos' => $exitosos,
+            'registros_fallidos' => $fallidos,
+            'total' => $exitosos + $fallidos,
+        ]);
+    }}

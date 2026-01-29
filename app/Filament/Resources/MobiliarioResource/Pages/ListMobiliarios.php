@@ -21,7 +21,9 @@ class ListMobiliarios extends ListRecords
                 ->color('warning')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->csvDelimiter(',')
-                ->maxRows(5000),
+                ->maxRows(5000)
+                ->chunkSize(10) // Procesar en lotes pequeños para debug
+                ->job(null), // Procesar sincrónicamente para ver errores
             Actions\CreateAction::make(),
         ];
     }

@@ -10,118 +10,154 @@ El sistema de importación de mobiliario permite cargar múltiples registros des
 ✅ **Validación en tiempo real** - Valida cada fila antes de importar  
 ✅ **Procesamiento en segundo plano** - Usa colas de Laravel para procesar grandes volúmenes  
 ✅ **Mapeo de columnas** - Interfaz visual para mapear columnas del CSV  
-✅ **Ejemplo descargable** - Descarga un CSV de ejemplo con todas las columnas  
+✅ **Auto-detección de columnas** - El sistema detecta automáticamente columnas del sistema anterior  
+✅ **Creación automática de localizaciones** - Crea nuevas ubicaciones si no existen  
 ✅ **Reporte de errores** - Descarga CSV con filas que fallaron y sus errores  
-✅ **Actualización o creación** - Opción para actualizar registros existentes  
 ✅ **Notificaciones** - Notifica cuando la importación se completa
 
 ## Ubicación
 
-La acción de importación está disponible en dos lugares:
+La acción de importación está disponible en:
 
-1. **Encabezado de la página de lista** - Botón "Importar Mobiliario" (verde)
-2. **Acciones de la tabla** - Botón "Importar CSV" (azul) en el header de la tabla
+1. **Encabezado de la página de lista de Mobiliario** - Botón "Importar desde Sistema Anterior" (naranja)
+2. **Acciones de la tabla** - Sección de acciones masivas
 
-## Estructura del CSV
+## Estructura del CSV (Sistema Anterior)
 
-### Columnas Requeridas
+El importador acepta el formato de exportación del sistema anterior. Las columnas se detectan automáticamente por nombre.
 
-Las siguientes columnas son obligatorias para cada registro:
+### Columnas del Sistema Anterior Soportadas
 
-| Columna | Descripción | Ejemplo |
-|---------|-------------|---------|
-| `numero_control` | Número de control único | MOB-2024-001 |
-| `clasificacion_bienes_id` | ID de clasificación | 1 |
-| `caracteristicas` | Características del equipo | Color negro, material plástico |
-| `descripcion` | Descripción del mobiliario | Silla ejecutiva ergonómica |
-| `marca` | Marca del producto | HP |
-| `modelo` | Modelo del producto | EliteDesk 800 |
-| `precio` | Precio del producto | 15000.00 |
-| `tipo_mobiliario_id` | ID del tipo de mobiliario | 1 |
-| `localizacion_id` | ID de la localización | 1 |
-| `tiene_folio` | Tiene folio (1 o 0) | 1 |
-| `estado_mobiliario` | Estado del equipo | Nuevo, Usado, Baja, Restaurado |
-| `tiene_accesorios` | Tiene accesorios (1 o 0) | 0 |
+| Columna CSV | Campo en Sistema | Descripción |
+|-------------|------------------|-------------|
+| `Clave del Bien` | numero_inventario | Número de inventario del bien |
+| `Nombre del Bien` | descripcion | Descripción del mobiliario |
+| `Grupo` | clasificacion_bienes_id | Grupo de clasificación |
+| `Subgrupo` | clasificacion_bienes_id | Subgrupo de clasificación |
+| `Clase` | clasificacion_bienes_id | Clase de clasificación |
+| `Marca` | marca | Marca del producto |
+| `Modelo` | modelo | Modelo del producto |
+| `Color` | caracteristicas | Se incluye en características |
+| `N. de Serie` | numero_serie | Número de serie |
+| `No Factura` | numero_folio | Número de folio/factura |
+| `Proveedor` | proveedor_id | Proveedor (se crea si no existe) |
+| `F. Adquisición` | metodo_adquisicion | Método de adquisición |
+| `F. de Factura` | fecha_factura | Fecha de factura |
+| `F. de Baja` | fecha_baja | Fecha de baja (si tiene, estado = Baja) |
+| `Valor` | precio | Precio del bien |
+| `F. Registro` | created_at | Fecha de registro original |
+| `Ubicacion` | localizacion.ubicacion | Ubicación física |
+| `Caracteristicas` | caracteristicas | Características del equipo |
+| `Procedencia` | caracteristicas | Se incluye en características |
+| `Dirección` | localizacion.direccion | Dirección administrativa |
+| `División` | localizacion.division | División organizacional |
+| `Departamento` | localizacion.sub_area | Departamento/Sub área |
+| `Responsable` | responsable_actual | Responsable del bien |
+| `Clave Emp.` | matricula_responsable | Matrícula del responsable |
+| `Puesto` | puesto_responsable | Puesto del responsable |
 
-### Columnas Opcionales
+### Campos Generados Automáticamente
 
-| Columna | Descripción | Ejemplo |
-|---------|-------------|---------|
-| `numero_inventario` | Número de inventario anterior | INV-2024-001 |
-| `numero_serie` | Número de serie | SN123456789 |
-| `proveedor_id` | ID del proveedor | 1 |
-| `metodo_adquisicion` | Método de adquisición | Compra directa |
-| `numero_folio` | Número de folio | FOL-2024-001 |
-| `descripcion_accesorios` | Descripción de accesorios | Mouse y teclado inalámbrico |
-| `dado_de_baja` | Está dado de baja (1 o 0) | 0 |
-| `fecha_baja` | Fecha de baja | 2024-12-31 |
-| `motivo_baja` | Motivo de la baja | Equipo obsoleto |
+| Campo | Descripción |
+|-------|-------------|
+| `numero_control` | Se genera automáticamente con formato IMP-{timestamp}-{random} |
+| `estado_mobiliario` | "Usado" por defecto, "Baja" si tiene fecha de baja |
+| `clasificacion_bienes_id` | Se busca por grupo/subgrupo/clase o usa el primero disponible |
+| `tipo_mobiliario_id` | Usa el primer tipo disponible |
+| `localizacion_id` | Se busca por dirección/división/departamento o se crea nueva |
 
 ## Proceso de Importación
 
 ### 1. Preparar el Archivo CSV
 
-1. Descarga el archivo de ejemplo haciendo clic en "Descargar ejemplo" en el modal de importación
-2. Abre el archivo en Excel, Google Sheets o tu editor preferido
-3. Llena los datos siguiendo el formato de las columnas
-4. Guarda el archivo como CSV (UTF-8)
+1. **Exporta desde el sistema anterior** el archivo CSV con los bienes
+2. **Limpia el archivo** si es necesario:
+   - Elimina filas de encabezados secundarios (como la fila con "F. Cal Dep.")
+   - Asegúrate de que el encoding sea UTF-8
+   - Elimina caracteres especiales problemáticos
 
 **Consejos para preparar el CSV:**
 
-- Asegúrate de que los IDs de relaciones existan en la base de datos
-- Los valores booleanos deben ser 1 (true) o 0 (false)
-- El formato de fecha debe ser: YYYY-MM-DD (ej: 2024-12-31)
-- El precio debe usar punto decimal, no coma (15000.50)
-- El estado_mobiliario solo acepta: Nuevo, Usado, Baja, Restaurado
+- El separador debe ser coma (,)
+- Los valores con comas deben estar entre comillas dobles
+- El formato de fecha debe ser DD/MM/YYYY (ej: 31/12/2024)
+- El precio puede tener formato con comas (1,393.00) que se convierte automáticamente
 
 ### 2. Iniciar la Importación
 
-1. Haz clic en el botón "Importar Mobiliario" o "Importar CSV"
-2. En el modal, puedes:
-   - **Descargar ejemplo** - Obtener un CSV con todas las columnas
-   - **Seleccionar archivo** - Cargar tu archivo CSV
-   - **Actualizar existentes** - Marcar si deseas actualizar registros que ya existen
+1. Navega a **Mobiliario** > **Lista de Mobiliario**
+2. Haz clic en el botón **"Importar desde Sistema Anterior"** (naranja)
+3. Selecciona tu archivo CSV
+4. Haz clic en **"Continuar"**
 
 ### 3. Mapear Columnas
 
-El sistema intentará mapear automáticamente las columnas de tu CSV con las columnas de la base de datos. Si alguna columna no se mapea correctamente:
+El sistema detectará automáticamente las columnas del sistema anterior. Verifica que:
 
-1. Revisa las columnas marcadas en rojo (requeridas sin mapear)
-2. Selecciona la columna correcta del CSV para cada campo
-3. Las columnas opcionales pueden dejarse sin mapear
+1. Las columnas marcadas como **requeridas** estén mapeadas (estrella roja)
+2. Las columnas opcionales estén mapeadas si los datos existen en el CSV
+3. Puedes ajustar el mapeo manualmente si es necesario
 
 ### 4. Procesar Importación
 
-1. Haz clic en "Importar"
+1. Haz clic en **"Importar"**
 2. La importación se procesa en segundo plano
-3. Recibirás una notificación cuando se complete
+3. Verás una notificación cuando se complete
 4. Si hay errores, podrás descargar un CSV con las filas que fallaron
 
-## Opciones de Importación
+## Ejemplo de CSV del Sistema Anterior
 
-### Actualizar Registros Existentes
+```csv
+Clave del Bien,Nombre del Bien,Grupo,Subgrupo,Clase,Marca,Modelo,Color,N. de Serie,No Factura,Proveedor,R. Social,Cod. Salud,F. Adquisición,F. de Factura,F. de  Baja,Valor,F. Registro,...,Caracteristicas,Procedencia,Dirección,División,Departamento,Responsable,Clave Emp.,Puesto,...
+1,ESCRITORIO,5,1,1,,,,,,0,,,COMPRA,31/12/2014,,"1,393.00",31/12/2014,...,CON 6 CAJONES-COLOR CAF,HC,DIRECCION ADMINISTRATIVA,DIVISION DE RECURSOS MATERIALES,ACTIVO FIJO,L.D. ANA ROSA JUAREZ CONTRERAS,,,...
+```
 
-Marca la casilla "Actualizar registros existentes" si deseas:
+## Campos que se Importan
 
-- **Marcado**: Actualizar registros que coincidan por `numero_control`
-- **No marcado**: Solo crear nuevos registros, fallar si existe uno con el mismo `numero_control`
+Según los requerimientos, los campos que se importan son:
+
+| Campo Requerido | Columna CSV | Estado |
+|-----------------|-------------|--------|
+| Núm. Inventario | Clave del Bien | ✅ |
+| Número de serie | N. de Serie | ✅ |
+| Dirección | Dirección | ✅ |
+| Sub área | Departamento | ✅ |
+| Estado de ubicación | Ubicacion | ✅ |
+| Proveedor | Proveedor | ✅ (se crea si no existe) |
+| Estado | Basado en F. de Baja | ✅ |
+| Tipo de vale | No Factura | ✅ |
+| Responsable de vale | Responsable | ✅ |
+| Fecha de vale | F. de Factura | ✅ |
+| Responsable actual | Responsable | ✅ |
+| Matrícula del responsable | Clave Emp. | ✅ |
+| Puesto del responsable | Puesto | ✅ |
+| Registrado (alta) | F. Registro | ✅ |
+| Última modificación | Auto (created_at) | ✅ |
+| Quién lo modificó | Auto (created_by=1) | ✅ |
+
+## Creación Automática de Registros
+
+### Localizaciones
+
+El importador **crea automáticamente** localizaciones si no encuentra una existente con la combinación de:
+- Dirección
+- División
+- Departamento (Sub área)
+
+Esto permite importar sin necesidad de precargar todas las ubicaciones.
+
+### Proveedores
+
+El importador **crea automáticamente** proveedores si no encuentra uno existente con el nombre proporcionado en la columna "Proveedor".
 
 ## Validaciones
 
 ### Validaciones de Formato
 
-- **numero_control**: Único, máximo 255 caracteres
-- **precio**: Debe ser numérico, mayor o igual a 0
+- **precio**: Se convierte automáticamente (1,393.00 → 1393.00)
 - **estado_mobiliario**: Solo valores permitidos: Nuevo, Usado, Baja, Restaurado
-- **fecha_baja**: Formato de fecha válido (YYYY-MM-DD)
-- **tiene_folio, tiene_accesorios, dado_de_baja**: Valores booleanos (0 o 1)
-
-### Validaciones de Relaciones
-
-- **clasificacion_bienes_id**: Debe existir en la tabla clasificacion_bienes
-- **tipo_mobiliario_id**: Debe existir en la tabla tipo_mobiliario
-- **localizacion_id**: Debe existir en la tabla localizacion
-- **proveedor_id**: Debe existir en la tabla proveedor (si se proporciona)
+- **fecha_baja**: Si tiene valor, el estado cambia a "Baja" automáticamente
+- **fechas**: Formato DD/MM/YYYY (del sistema anterior)
 
 ## Manejo de Errores
 
@@ -261,20 +297,55 @@ MOB-2024-003,INV-2023-101,1,"Material metálico","Escritorio ejecutivo",Steelcas
 
 ## Clase Importer
 
-La clase de importación se encuentra en:
+La clase de importación del sistema anterior se encuentra en:
+
+```
+app/Filament/Imports/MobiliarioLegacyImporter.php
+```
+
+La clase de importación estándar (formato nuevo) se encuentra en:
 
 ```
 app/Filament/Imports/MobiliarioImporter.php
 ```
 
+### Comando de Prueba
+
+Para probar la importación desde la línea de comandos:
+
+```bash
+./vendor/bin/sail artisan test:importacion-mobiliario
+```
+
+Este comando:
+- Leerá 5 registros de prueba del CSV
+- Mostrará el progreso en consola
+- Creará registros de mobiliario
+- Mostrará errores si los hay
+
 ### Personalización
 
 Puedes personalizar el comportamiento modificando:
 
-- `getColumns()`: Define las columnas y sus validaciones
+- `getColumns()`: Define las columnas y sus mappings
 - `resolveRecord()`: Lógica para crear o actualizar registros
-- `getOptionsFormComponents()`: Opciones adicionales para el usuario
-- `getCompletedNotificationBody()`: Mensaje de notificación de completado
+- `limpiarTexto()`: Función para limpiar encoding del sistema anterior
+- `buscarLocalizacion()`: Lógica para buscar/crear localizaciones
+
+## Preparación del CSV (Sistema Anterior)
+
+Si el CSV exportado del sistema anterior tiene problemas de encoding:
+
+```bash
+# Ver los primeros bytes del archivo (verificar BOM)
+head -c 10 archivo.csv | xxd
+
+# Convertir encoding Windows a UTF-8
+iconv -f WINDOWS-1252 -t UTF-8 archivo.csv > archivo_limpio.csv
+
+# Eliminar BOM si existe
+sed -i '1s/^\xef\xbb\xbf//' archivo_limpio.csv
+```
 
 ## Referencias
 
@@ -288,11 +359,12 @@ Si encuentras problemas con la importación:
 
 1. Revisa los logs de Laravel: `storage/logs/laravel.log`
 2. Verifica los trabajos fallidos: `php artisan queue:failed`
-3. Consulta esta documentación para errores comunes
-4. Contacta al administrador del sistema si el problema persiste
+3. Ejecuta el comando de prueba: `sail artisan test:importacion-mobiliario`
+4. Consulta esta documentación para errores comunes
+5. Contacta al administrador del sistema si el problema persiste
 
 ---
 
-**Última actualización**: Enero 2026  
+**Última actualización**: Junio 2025  
 **Versión del sistema**: 1.0  
 **Versión de Filament**: 5.x

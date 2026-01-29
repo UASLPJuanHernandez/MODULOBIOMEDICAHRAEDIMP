@@ -199,6 +199,12 @@ class ViewMobiliario extends ViewRecord
                                     })
                                     ->icon('heroicon-o-shopping-cart'),
 
+                                TextEntry::make('donante')
+                                    ->label('Donante')
+                                    ->placeholder('Sin especificar')
+                                    ->icon('heroicon-o-user-circle')
+                                    ->visible(fn ($record) => $record->metodo_adquisicion === 'Donación'),
+
                                 TextEntry::make('proveedor.nombre_proveedor')
                                     ->label('Proveedor')
                                     ->placeholder('Sin proveedor registrado')

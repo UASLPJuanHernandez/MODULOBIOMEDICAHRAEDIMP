@@ -36,6 +36,31 @@ class MantenimientoResource extends Resource
     protected static ?string $modelLabel = 'Orden de Servicio';
     
     protected static ?string $pluralModelLabel = 'Órdenes de Servicio';
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador']) ?? false;
+    }
+    
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador']) ?? false;
+    }
+    
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador', 'Personal de Apoyo']) ?? false;
+    }
+    
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador']) ?? false;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
 
     public static function form(Form $form): Form
     {

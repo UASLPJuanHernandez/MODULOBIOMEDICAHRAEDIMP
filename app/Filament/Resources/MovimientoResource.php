@@ -29,6 +29,21 @@ class MovimientoResource extends Resource
     protected static ?string $model = Movimiento::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+    }
+    
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
+    
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('Administrador') ?? false;
+    }
 
     protected static ?string $navigationLabel = 'Movimientos';
 

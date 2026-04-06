@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Sistema de Activo Fijo HRAE DIMP')
+            ->brandName('Departamento de Ingenieria Biomedica')
             ->colors([
                 'primary' => Color::hex('#BC955C'),
                 'danger' => Color::Red,

@@ -43,6 +43,12 @@ Route::get('/auditoria/{auditoria}/reporte-pdf', [App\Http\Controllers\Auditoria
     ->name('auditoria.reporte.pdf')
     ->middleware('auth');
 
+// Pizarrón en pantalla completa (sin layout de Filament)
+Route::get('/pizarron', function () {
+    $reportes = \App\Models\ReportePizarron::activos()->orderBy('created_at', 'asc')->get();
+    return view('pizarron-standalone', compact('reportes'));
+})->name('pizarron.standalone')->middleware('auth');
+
 // Rutas para Filament Admin
 Route::get('/admin/vales/create-from-movimiento/{movimiento_id}', function ($movimiento_id) {
     return redirect()->route('filament.admin.resources.vales.create', [

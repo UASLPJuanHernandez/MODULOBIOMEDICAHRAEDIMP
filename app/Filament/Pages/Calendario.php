@@ -11,7 +11,7 @@ class Calendario extends Page
     protected static ?string $navigationIcon  = 'heroicon-o-calendar';
     protected static ?string $navigationLabel = 'Calendario';
     protected static ?string $title           = 'Calendario';
-    protected static ?int    $navigationSort  = -1;
+    protected static ?int    $navigationSort  = -2;
 
     public function getHeading(): string
     {

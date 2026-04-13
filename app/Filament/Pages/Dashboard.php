@@ -12,7 +12,7 @@ class Dashboard extends BaseDashboard
     protected static ?string $title = 'Pizarrón';
 
     protected static ?string $navigationLabel = 'Inicio';
-    protected static ?int    $navigationSort  = -2;
+    protected static ?int    $navigationSort  = -3;
 
     public function getHeading(): string
     {

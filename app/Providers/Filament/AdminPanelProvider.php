@@ -11,6 +11,9 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\HtmlString;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -63,6 +66,13 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications(false)
-            ->databaseNotificationsPolling(null);
+            ->databaseNotificationsPolling(null)
+            ->assets([
+                Js::make('pdfjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'),
+            ])
+            ->renderHook(
+                PanelsRenderHook::SCRIPTS_AFTER,
+                fn () => new HtmlString('<script src="/js/formatos-pdf-overlay.js"></script>'),
+            );
     }
 }

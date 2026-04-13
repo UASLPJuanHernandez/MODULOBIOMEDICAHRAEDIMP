@@ -5,11 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MobiliarioResource\Pages;
 use App\Filament\Imports\MobiliarioImporter;
 use App\Models\Mobiliario;
-use App\Models\ClasificacionBien;
 use App\Models\TipoMobiliario;
 use App\Models\Localizacion;
 use App\Models\Proveedor;
-use App\Models\Vale;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -50,7 +48,7 @@ class MobiliarioResource extends Resource
     
     public static function shouldRegisterNavigation(): bool
     {
-        return !auth()->user()?->hasRole('Personal de Mantenimiento') ?? true;
+        return false;
     }
     
     public static function canDelete($record): bool
@@ -104,15 +102,6 @@ class MobiliarioResource extends Resource
                         ]),
                         
                         Grid::make(2)->schema([
-                            Forms\Components\Select::make('clasificacion_bienes_id')
-                                ->label('Clasificación de Bienes')
-                                ->relationship('clasificacionBien', 'id')
-                                ->getOptionLabelFromRecordUsing(fn ($record) => $record->descripcion_completa)
-                                ->required()
-                                ->searchable()
-                                ->preload()
-                                ->columnSpan(1),
-                                
                             Forms\Components\Select::make('estado_mobiliario')
                                 ->label('Estado del Mobiliario')
                                 ->options([
@@ -321,54 +310,12 @@ class MobiliarioResource extends Resource
                             ->placeholder('Opcional'),
                     ]),
 
-                Section::make('Asignación de Responsable')
-                    ->description('Los datos del responsable se usarán para generar automáticamente el vale de resguardo')
-                    ->schema([
-                        Grid::make(2)->schema([
-                            Forms\Components\TextInput::make('responsable_entrega')
-                                ->label('Responsable de Entrega')
-                                ->required()
-                                ->maxLength(255)
-                                ->helperText('Nombre completo de quien entrega el mobiliario'),
-                                
-                            Forms\Components\TextInput::make('matricula_entrega')
-                                ->label('Matrícula de quien Entrega')
-                                ->maxLength(255)
-                                ->helperText('Matrícula o identificación de quien entrega'),
-                                
-                            Forms\Components\TextInput::make('responsable_recibe')
-                                ->label('Responsable que Recibe')
-                                ->required()
-                                ->maxLength(255)
-                                ->helperText('Nombre completo del responsable del resguardo'),
-                                
-                            Forms\Components\TextInput::make('matricula_recibe')
-                                ->label('Matrícula de quien Recibe')
-                                ->maxLength(255)
-                                ->helperText('Matrícula o identificación del responsable'),
-                        ]),
-                        
-                        Forms\Components\DatePicker::make('fecha_asignacion')
-                            ->label('Fecha de Asignación')
-                            ->default(now())
-                            ->required()
-                            ->helperText('Fecha en que se asigna el mobiliario al responsable'),
-                        
-                        Forms\Components\Textarea::make('observaciones_vale')
-                            ->label('Observaciones para el Vale')
-                            ->rows(3)
-                            ->columnSpanFull()
-                            ->helperText('Observaciones adicionales que se incluirán en el vale de resguardo'),
-                    ])
-                    ->collapsible()
-                    ->collapsed(false),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['vales' => fn($q) => $q->latest()->limit(1)]))
             ->columns([
                 Tables\Columns\IconColumn::make('en_mantenimiento')
                     ->label('')
@@ -481,13 +428,12 @@ class MobiliarioResource extends Resource
                         $tooltip = "Total: {$resumen['total']} mantenimientos\n";
                         $tooltip .= "Pendientes: {$resumen['por_estado']['pendiente']}\n";
                         $tooltip .= "En proceso: {$resumen['por_estado']['aceptado']}\n";
-                        $tooltip .= "Completados: {$resumen['por_estado']['completado']}\n";
-                        $tooltip .= "Con vales: {$resumen['con_vales']}";
-                        
+                        $tooltip .= "Completados: {$resumen['por_estado']['completado']}";
+
                         if ($resumen['ultimo_mantenimiento']) {
                             $tooltip .= "\nÚltimo: " . $resumen['ultimo_mantenimiento']->format('d/m/Y');
                         }
-                        
+
                         return $tooltip;
                     })
                     ->toggleable()
@@ -525,20 +471,6 @@ class MobiliarioResource extends Resource
                         return strlen($state) > 30 ? $state : null;
                     })
                     ->placeholder('Sin ubicación'),
-                    
-                Tables\Columns\TextColumn::make('estado_ubicacion')
-                    ->label('Estado Ubicación')
-                    ->formatStateUsing(function ($record) {
-                        $movimientosIndividuales = $record->movimientos->count();
-                        $movimientosMultiples = $record->movimientosMultiples->count();
-                        $totalMovimientos = $movimientosIndividuales + $movimientosMultiples;
-                        
-                        return $totalMovimientos > 0 ? 'Con movimientos (' . $totalMovimientos . ')' : 'Ubicación original';
-                    })
-                    ->badge()
-                    ->color(fn (string $state): string => str_contains($state, 'movimientos') ? 'success' : 'gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                    
                     
                 Tables\Columns\TextColumn::make('precio')
                     ->label('Precio (MXN)')
@@ -593,45 +525,6 @@ class MobiliarioResource extends Resource
                         'Restaurado' => 'warning',
                         default => 'gray',
                     })
-                    ->toggleable(),
-                    
-                // Columnas del Vale asociado
-                Tables\Columns\TextColumn::make('vales.tipo_vale')
-                    ->label('Tipo Vale')
-                    ->badge()
-                    ->getStateUsing(function ($record) {
-                        $ultimoVale = $record->vales->first();
-                        return $ultimoVale ? $ultimoVale->tipo_vale : null;
-                    })
-                    ->color(fn ($state): string => match ($state) {
-                        'Entrega' => 'success',
-                        'Devolución' => 'warning',
-                        'Transferencia' => 'info',
-                        default => 'gray',
-                    })
-                    ->placeholder('Sin vale')
-                    ->toggleable(),
-                    
-                Tables\Columns\TextColumn::make('vales.responsable')
-                    ->label('Responsable Vale')
-                    ->getStateUsing(function ($record) {
-                        $ultimoVale = $record->vales->first();
-                        if (!$ultimoVale) return null;
-                        
-                        return $ultimoVale->responsable_recibe ?: $ultimoVale->responsable_entrega;
-                    })
-                    ->placeholder('Sin responsable')
-                    ->toggleable(),
-                    
-                Tables\Columns\TextColumn::make('vales.fecha_generacion')
-                    ->label('Fecha Vale')
-                    ->date('d/m/Y')
-                    ->getStateUsing(function ($record) {
-                        $ultimoVale = $record->vales->first();
-                        return $ultimoVale ? $ultimoVale->fecha_generacion : null;
-                    })
-                    ->placeholder('Sin vale')
-                    ->sortable()
                     ->toggleable(),
                     
                 // Información del Responsable Actual (del sistema anterior)
@@ -768,24 +661,6 @@ class MobiliarioResource extends Resource
                         }
                     }),
                     
-                SelectFilter::make('con_movimientos')
-                    ->label('Estado de Movimientos')
-                    ->options([
-                        'con_movimientos' => 'Con movimientos',
-                        'sin_movimientos' => 'Sin movimientos',
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if ($data['value'] === 'con_movimientos') {
-                            $query->where(function ($q) {
-                                $q->has('movimientos')->orHas('movimientosMultiples');
-                            });
-                        } elseif ($data['value'] === 'sin_movimientos') {
-                            $query->where(function ($q) {
-                                $q->doesntHave('movimientos')->doesntHave('movimientosMultiples');
-                            });
-                        }
-                    }),
-                    
                 Filter::make('precio_range')
                     ->form([
                         Grid::make(2)->schema([
@@ -828,22 +703,6 @@ class MobiliarioResource extends Resource
                                 $data['created_until'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
-                    }),
-                    
-                Filter::make('responsable_vale')
-                    ->form([
-                        Forms\Components\TextInput::make('responsable')
-                            ->label('Responsable del Vale')
-                            ->placeholder('Buscar por nombre del responsable...'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query->when(
-                            $data['responsable'],
-                            fn (Builder $query, $responsable): Builder => $query->whereHas('vales', function ($q) use ($responsable) {
-                                $q->where('responsable_recibe', 'like', "%{$responsable}%")
-                                  ->orWhere('responsable_entrega', 'like', "%{$responsable}%");
-                            })
-                        );
                     }),
                     
                 SelectFilter::make('created_by')
@@ -900,9 +759,6 @@ class MobiliarioResource extends Resource
                             ->required(fn (Forms\Get $get) => $get('tipo_mantenimiento') === 'proveedor'),
                     ])
                     ->action(function (array $data, Mobiliario $record) {
-                        // Obtener datos del mobiliario y su ubicación actual
-                        $ubicacionActual = $record->ubicacionReal();
-                        
                         // Crear solicitud de mantenimiento
                         $mantenimiento = \App\Models\Mantenimiento::create([
                             'mobiliario_id' => $record->id,
@@ -928,11 +784,10 @@ class MobiliarioResource extends Resource
                         );
                     })
                     ->modalHeading('Solicitar Mantenimiento')
-                    ->modalDescription(fn (Mobiliario $record) => 
+                    ->modalDescription(fn (Mobiliario $record) =>
                         "Equipo: {$record->numero_control}\n" .
                         "Descripción: {$record->descripcion}\n" .
-                        "Ubicación: " . ($record->ubicacionReal()['area'] ?? 'Sin ubicación') . "\n" .
-                        "Responsable: " . ($record->ubicacionReal()['responsable'] ?? 'Sin responsable')
+                        "Ubicación: " . ($record->localizacion?->ubicacion ?? 'Sin ubicación')
                     )
                     ->modalSubmitActionLabel('Crear Solicitud')
                     ->visible(fn (Mobiliario $record) => !$record->dado_de_baja),
@@ -962,40 +817,6 @@ class MobiliarioResource extends Resource
                             'Content-Type' => 'image/png',
                         ]);
                     }),
-                    
-                Action::make('verHistorial')
-                    ->label('Ver Historial')
-                    ->icon('heroicon-o-clock')
-                    ->color('info')
-                    ->modalHeading('Historial de Movimientos')
-                    ->modalContent(function (Mobiliario $record) {
-                        // Obtener movimientos individuales
-                        $movimientosIndividuales = $record->movimientos()
-                            ->with(['areaActual', 'areaAnterior', 'usuario'])
-                            ->get();
-                            
-                        // Obtener movimientos múltiples
-                        $movimientosMultiples = $record->movimientosMultiples()
-                            ->with(['areaActual', 'usuario'])
-                            ->get();
-                        
-                        // Combinar ambos tipos de movimientos
-                        $todosLosMovimientos = $movimientosIndividuales
-                            ->concat($movimientosMultiples)
-                            ->sortByDesc('fecha_movimiento')
-                            ->values();
-                            
-                        if ($todosLosMovimientos->isEmpty()) {
-                            return view('historial-vacio');
-                        }
-                        
-                        return view('historial-movimientos', [
-                            'movimientos' => $todosLosMovimientos, 
-                            'record' => $record
-                        ]);
-                    })
-                    ->modalWidth('5xl')
-                    ->slideOver(),
                     
                 Action::make('verHistorialMantenimientos')
                     ->label('Historial Mantenimientos')
@@ -1155,14 +976,6 @@ class MobiliarioResource extends Resource
                 'usuarioCreador',
                 'usuarioEditor',
                 'proveedor',
-                'clasificacionBien',
-                'ultimoMovimiento.areaActual',
-                'movimientos' => function($query) {
-                    $query->orderBy('fecha_movimiento', 'desc');
-                },
-                'vales' => function($query) {
-                    $query->latest()->limit(1);
-                }
             ]);
     }
     

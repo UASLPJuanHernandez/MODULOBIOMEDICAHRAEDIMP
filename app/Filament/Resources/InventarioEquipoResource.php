@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources;
 
+use App\Exports\InventarioEquipoExport;
 use App\Filament\Resources\InventarioEquipoResource\Pages;
 use App\Models\InventarioEquipo;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Grid;
@@ -14,6 +16,7 @@ use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventarioEquipoResource extends Resource
 {
@@ -352,6 +355,18 @@ class InventarioEquipoResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\ExportBulkAction::make()
+                        ->hidden(),
+                    Tables\Actions\BulkAction::make('exportar_seleccion')
+                        ->label('Exportar selección a Excel')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->action(function (\Illuminate\Support\Collection $records) {
+                            $fecha = Carbon::now()->format('Y-m-d_H-i');
+                            $nombre = "Inventario_Equipos_Seleccion_{$fecha}.xlsx";
+                            return Excel::download(new InventarioEquipoExport($records), $nombre);
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()?->hasRole('Administrador') ?? false),
                 ]),

@@ -2,11 +2,16 @@
 
 namespace App\Filament\Resources\InventarioEquipoResource\Pages;
 
+use App\Exports\InventarioEquipoExport;
 use App\Filament\Resources\InventarioEquipoResource;
+use Carbon\Carbon;
 use Filament\Actions;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Components\Tab;
 use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ListInventarioEquipos extends ListRecords
 {
@@ -15,6 +20,15 @@ class ListInventarioEquipos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('exportar_excel')
+                ->label('Descargar Excel')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success')
+                ->action(function (): BinaryFileResponse {
+                    $fecha = Carbon::now()->format('Y-m-d_H-i');
+                    $nombre = "Inventario_Equipos_HRAEDIMP_{$fecha}.xlsx";
+                    return Excel::download(new InventarioEquipoExport(), $nombre);
+                }),
             Actions\CreateAction::make(),
         ];
     }

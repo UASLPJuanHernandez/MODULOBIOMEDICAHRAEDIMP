@@ -355,6 +355,12 @@ class InventarioEquipoResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('deseleccionar')
+                        ->label('Quitar selección')
+                        ->icon('heroicon-o-x-mark')
+                        ->color('gray')
+                        ->action(fn () => null)
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\ExportBulkAction::make()
                         ->hidden(),
                     Tables\Actions\BulkAction::make('exportar_seleccion')

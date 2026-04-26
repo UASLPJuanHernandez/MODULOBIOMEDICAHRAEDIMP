@@ -80,6 +80,11 @@ class User extends Authenticatable
         return $this->hasRole('Jefe de Área');
     }
 
+    public function esJefeServicio(): bool
+    {
+        return $this->hasRole('Jefe de Servicio');
+    }
+
     public function puedeEditarMobiliario(): bool
     {
         return $this->esAdministrador() || $this->esPersonalApoyo();

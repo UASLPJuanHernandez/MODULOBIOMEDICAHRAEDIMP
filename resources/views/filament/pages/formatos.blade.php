@@ -7,13 +7,31 @@
 
 <div class="flex items-center justify-between mb-5">
     <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Formatos</h2>
-    <button wire:click="irCrear"
-            class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Subir formato
-    </button>
+    <div class="flex items-center gap-2">
+        @if(auth()->user()->esJefeServicio())
+        <button wire:click="abrirModalMantenimientos"
+                class="inline-flex items-center gap-2 border border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 text-teal-700 dark:text-teal-400 text-sm font-semibold px-4 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+            Mantenimientos recibidos
+            @php $cntPend = \App\Models\Registro::where('es_borrador',false)->where('estado','pendiente')->count(); @endphp
+            @if($cntPend > 0)
+            <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-bold bg-teal-500 text-white">
+                {{ $cntPend }}
+            </span>
+            @endif
+        </button>
+        @endif
+        <button wire:click="irCrear"
+                class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Subir formato
+        </button>
+    </div>
 </div>
 
 @php $formatos = $this->getFormatos(); @endphp
@@ -77,9 +95,14 @@
                                 class="text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-semibold px-3 py-1.5 rounded-lg transition">
                             Rellenar
                         </button>
-                        <button wire:click="irHistorial({{ $fmt->id }})"
-                                class="text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-lg transition">
-                            Historial
+                        <button wire:click="irBorradores({{ $fmt->id }})"
+                                class="relative text-xs bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5">
+                            Borradores
+                            @if(($fmt->borradores_count ?? 0) > 0)
+                            <span class="inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                                {{ $fmt->borradores_count }}
+                            </span>
+                            @endif
                         </button>
                         <button wire:click="eliminarFormato({{ $fmt->id }})"
                                 wire:confirm="¿Eliminar el formato '{{ $fmt->nombre }}'? Se borrarán también todos sus registros."
@@ -236,10 +259,6 @@
                     class="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-1.5 rounded-lg transition text-sm">
                 Guardar registro
             </button>
-            <button wire:click="irHistorial({{ $fmt?->id }})"
-                    class="border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-4 py-1.5 rounded-lg transition text-sm">
-                Historial
-            </button>
             @if($fmt?->archivo_path)
             <a href="{{ route('formato.archivo', $fmt) }}" target="_blank"
                class="border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-4 py-1.5 rounded-lg transition text-sm flex items-center gap-1">
@@ -281,6 +300,7 @@
                 </svg>
                 Agregar firma
             </button>
+            {{-- Firma quien recibe: solo disponible desde la plataforma de reportes --}}
             <button type="button" onclick="pdfOverlay.guardarPlantilla()"
                     class="inline-flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-lg border
                            border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300
@@ -311,9 +331,9 @@
 @endif
 
 {{-- ================================================================ --}}
-{{-- HISTORIAL                                                         --}}
+{{-- BORRADORES                                                        --}}
 {{-- ================================================================ --}}
-@if($vista === 'historial')
+@if($vista === 'borradores')
 @php $fmt = $this->getFormatoActual(); @endphp
 
 <div>
@@ -326,7 +346,7 @@
                 </svg>
             </button>
             <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                Historial: <span class="text-primary-600">{{ $fmt?->nombre }}</span>
+                Borradores: <span class="text-amber-600 dark:text-amber-400">{{ $fmt?->nombre }}</span>
             </h2>
         </div>
         <button wire:click="irEditar({{ $fmt?->id }})"
@@ -375,15 +395,16 @@
         @endif
     </div>
 
-    @php $historial = $this->getHistorial(); @endphp
+    @php $borradores = $this->getBorradores(); @endphp
 
-    @if($historial->isEmpty())
+    @if($borradores->isEmpty())
     <div class="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
         <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z"/>
         </svg>
-        <p class="text-gray-500 dark:text-gray-400 font-medium">No se encontraron registros.</p>
+        <p class="text-gray-500 dark:text-gray-400 font-medium">No hay borradores guardados.</p>
+        <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">Rellena un formato y usa "Guardar borrador" para guardarlo aquí.</p>
     </div>
     @else
     <div class="w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
@@ -391,52 +412,26 @@
             <thead class="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
                     <th class="w-[5%] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" style="padding-left:2rem;padding-right:1.25rem">#</th>
-                    <th class="w-[30%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identificador</th>
-                    <th class="w-[20%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuario</th>
-                    <th class="w-[15%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                    <th class="w-[15%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                    <th class="w-[35%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identificador</th>
+                    <th class="w-[25%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuario</th>
+                    <th class="w-[20%] px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
                     <th class="w-[15%] py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" style="padding-left:1.25rem;padding-right:2rem">Acción</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                @foreach($historial as $reg)
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition {{ $reg->es_borrador ? 'bg-amber-50/40 dark:bg-amber-900/10' : '' }}">
+                @foreach($borradores as $reg)
+                <tr class="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition bg-amber-50/20 dark:bg-amber-900/5">
                     <td class="py-3.5 text-sm text-gray-400 dark:text-gray-500" style="padding-left:2rem;padding-right:1.25rem">{{ $reg->id }}</td>
                     <td class="px-5 py-3.5 font-medium text-gray-900 dark:text-gray-100 truncate">
                         {{ $reg->identificador ?: '—' }}
                     </td>
                     <td class="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400 truncate">{{ $reg->usuario?->name ?? '—' }}</td>
-                    <td class="px-5 py-3.5">
-                        @if($reg->es_borrador)
-                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z"/>
-                                </svg>
-                                Borrador
-                            </span>
-                        @else
-                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Guardado
-                            </span>
-                        @endif
-                    </td>
                     <td class="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400">{{ $reg->created_at->format('d/m/Y H:i') }}</td>
                     <td class="py-3.5 text-right" style="padding-left:1.25rem;padding-right:2rem">
-                        @if($reg->es_borrador)
-                            <button wire:click="continuarBorrador({{ $reg->id }})"
-                                    class="text-xs bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold px-3 py-1.5 rounded-lg transition">
-                                Continuar
-                            </button>
-                        @else
-                            <button wire:click="verRegistro({{ $reg->id }})"
-                                    class="text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-semibold px-3 py-1.5 rounded-lg transition">
-                                Ver
-                            </button>
-                        @endif
+                        <button wire:click="continuarBorrador({{ $reg->id }})"
+                                class="text-xs bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold px-3 py-1.5 rounded-lg transition">
+                            Continuar
+                        </button>
                     </td>
                 </tr>
                 @endforeach
@@ -471,7 +466,7 @@
     {{-- Header --}}
     <div class="fmt-view-header flex items-center justify-between mb-4 flex-wrap gap-2">
         <div class="flex items-center gap-3">
-            <button wire:click="irHistorial({{ $formatoId }})"
+            <button wire:click="volverLista"
                     class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -513,6 +508,190 @@
         </div>
     </div>
 
+</div>
+
+@endif
+
+{{-- ================================================================ --}}
+{{-- MODAL: MANTENIMIENTOS RECIBIDOS (solo jefes de servicio)         --}}
+{{-- ================================================================ --}}
+@if($modalMantenimientosAbierto && auth()->user()->esJefeServicio())
+
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.6);">
+
+    <div class="relative w-full bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col"
+         style="max-width:960px; height:90vh;">
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-teal-600 dark:text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">Mantenimientos recibidos</h3>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">Formatos pendientes de firma — tu área de servicio</p>
+                </div>
+            </div>
+            <button wire:click="cerrarModalMantenimientos"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        @if($mantenimientoViendoId)
+        {{-- Sub-vista: visor PDF del mantenimiento seleccionado --}}
+        @php $mReg = \App\Models\Registro::with(['formato','usuario'])->find($mantenimientoViendoId); @endphp
+        <div class="flex flex-col flex-1 overflow-hidden">
+            {{-- Sub-header --}}
+            <div class="flex items-center justify-between px-5 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
+                <div class="flex items-center gap-2">
+                    <button wire:click="$set('mantenimientoViendoId', null)"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {{ $mReg?->identificador ?: 'Mantenimiento #' . $mReg?->id }}
+                        </p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">
+                            {{ $mReg?->formato?->nombre }}
+                            &mdash; {{ $mReg?->usuario?->name ?? '—' }}
+                            &mdash; {{ $mReg?->created_at?->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+                </div>
+                <button wire:click="firmarMantenimiento({{ $mantenimientoViendoId }})"
+                        class="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-lg text-white transition"
+                        style="background-color:#0d9488;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z"/>
+                    </svg>
+                    Firmar y enviar
+                </button>
+            </div>
+            {{-- Visor PDF --}}
+            <div class="flex-1 overflow-y-auto bg-gray-400 dark:bg-gray-900 rounded-b-2xl" wire:ignore>
+                <div id="pdf-overlay-mantenimiento" class="py-6 flex flex-col items-center min-h-full">
+                    <div class="pdf-pages-wrap flex flex-col items-center w-full">
+                        <p class="text-white text-sm opacity-60">Cargando PDF…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @else
+        {{-- Lista de mantenimientos --}}
+        <div class="flex flex-col flex-1 overflow-hidden">
+            {{-- Filtros --}}
+            <div class="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                <div class="relative flex-1 min-w-[180px]">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                    </svg>
+                    <input wire:model.live.debounce.300ms="mBusqueda"
+                           type="text" placeholder="Buscar por identificador…"
+                           class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                @php $fmtsLista = $this->getFormatos(); @endphp
+                @if($fmtsLista->isNotEmpty())
+                <select wire:model.live="mFiltroFormato"
+                        class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">Todos los formatos</option>
+                    @foreach($fmtsLista as $fmtOpt)
+                    <option value="{{ $fmtOpt->id }}">{{ $fmtOpt->nombre }}</option>
+                    @endforeach
+                </select>
+                @endif
+                <div class="flex items-center gap-1.5">
+                    <input wire:model.live="mFechaDesde" type="date"
+                           class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <span class="text-xs text-gray-400">—</span>
+                    <input wire:model.live="mFechaHasta" type="date"
+                           class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                @if($mBusqueda || $mFiltroFormato || $mFechaDesde || $mFechaHasta)
+                <button wire:click="$set('mBusqueda','');$set('mFiltroFormato','');$set('mFechaDesde','');$set('mFechaHasta','')"
+                        class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Limpiar
+                </button>
+                @endif
+            </div>
+
+            {{-- Tabla --}}
+            <div class="flex-1 overflow-y-auto p-5">
+                @php $mantenimientos = $this->getMantenimientosPendientes(); @endphp
+                @if($mantenimientos->isEmpty())
+                <div class="flex flex-col items-center justify-center py-16 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+                    <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-gray-500 dark:text-gray-400 font-medium">No hay mantenimientos pendientes de firma.</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Aparecen aquí cuando los ingenieros guardan registros.</p>
+                </div>
+                @else
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <table class="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th class="w-[35%] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" style="padding-left:1.5rem">Identificador</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Formato</th>
+                                <th class="w-[140px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ingeniero</th>
+                                <th class="w-[120px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                                <th class="w-[120px] py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" style="padding-right:1.5rem">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach($mantenimientos as $mnt)
+                            <tr class="hover:bg-teal-50/30 dark:hover:bg-teal-900/10 transition">
+                                <td class="py-3.5 text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" style="padding-left:1.5rem">
+                                    {{ $mnt->identificador ?: '# ' . $mnt->id }}
+                                </td>
+                                <td class="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-400 truncate">
+                                    {{ $mnt->formato?->nombre ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {{ $mnt->usuario?->name ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3.5 text-sm text-gray-400 dark:text-gray-500">
+                                    {{ $mnt->created_at->format('d/m/Y') }}
+                                </td>
+                                <td class="py-3.5 text-right" style="padding-right:1.5rem">
+                                    <button wire:click="verMantenimiento({{ $mnt->id }})"
+                                            class="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-teal-400 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        Ver y firmar
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
+    </div>
 </div>
 
 @endif

@@ -13,10 +13,14 @@ class Registro extends Model
         'identificador',
         'contenido_editado',
         'es_borrador',
+        'estado',
+        'firmado_por_id',
+        'firmado_at',
     ];
 
     protected $casts = [
         'es_borrador' => 'boolean',
+        'firmado_at'  => 'datetime',
     ];
 
     public function scopeBorradores($query)
@@ -37,5 +41,10 @@ class Registro extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function firmadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'firmado_por_id');
     }
 }

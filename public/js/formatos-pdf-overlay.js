@@ -33,7 +33,7 @@
             if (n >= _nextId) _nextId = n + 1;
         });
 
-        var containerId = _visor ? 'pdf-overlay-viewer' : 'pdf-overlay-editor';
+        var containerId = opts.containerId || (_visor ? 'pdf-overlay-viewer' : 'pdf-overlay-editor');
         var container   = document.getElementById(containerId);
         if (!container) return;
 
@@ -156,7 +156,7 @@
             'min-height:' + Math.max(px.h, 24) + 'px;' +
             'box-sizing:border-box;z-index:10;overflow:visible;';
 
-        var esFirma = campo.tipo === 'firma';
+        var esFirma = campo.tipo === 'firma' || campo.tipo === 'firma_jefe';
 
         if (_visor) {
             /* ── Modo solo lectura ── */
@@ -261,7 +261,7 @@
                     'border-radius:50%;background:#7c3aed;color:#fff;border:none;' +
                     'cursor:pointer;z-index:20;padding:2px;display:none;' +
                     'align-items:center;justify-content:center;';
-                redibujar.addEventListener('click',     function (e) { e.stopPropagation(); _abrirPickerFirma(campo.id); });
+                redibujar.addEventListener('click',     function (e) { e.stopPropagation(); campo.tipo === 'firma_jefe' ? _abrirPickerJefa(campo.id) : _abrirPickerFirma(campo.id); });
                 redibujar.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 
                 el.appendChild(imgE);
@@ -706,6 +706,170 @@
         modal.style.display = 'flex';
     }
 
+    /* ===== Modal de firma jefa que recibe ===== */
+    function _inyectarModalJefa() {
+        if (document.getElementById('fmt-jefa-modal')) return;
+
+        var modal = document.createElement('div');
+        modal.id = 'fmt-jefa-modal';
+        modal.style.cssText =
+            'display:none;position:fixed;inset:0;z-index:99999;' +
+            'background:rgba(0,0,0,.55);align-items:center;justify-content:center;';
+
+        modal.innerHTML =
+            '<div style="background:#fff;border-radius:14px;' +
+                 'max-width:540px;width:94%;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden;">' +
+                '<div style="padding:22px 24px 20px;">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+                        '<h3 style="margin:0;font-size:16px;font-weight:700;color:#111;">Firma — Jefa de Servicio que recibe</h3>' +
+                        '<button id="fmt-jefa-cerrar" type="button" ' +
+                            'style="background:none;border:none;cursor:pointer;font-size:22px;' +
+                                   'color:#9ca3af;line-height:1;padding:0;">×</button>' +
+                    '</div>' +
+                    '<div id="fmt-jefa-grid" style="' +
+                        'display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));' +
+                        'gap:10px;max-height:360px;overflow-y:auto;padding-right:4px;' +
+                        'margin-bottom:16px;"></div>' +
+                    '<div style="display:flex;justify-content:flex-end;">' +
+                        '<button id="fmt-jefa-cancelar" type="button" ' +
+                            'style="padding:8px 16px;border:1px solid #d1d5db;border-radius:8px;' +
+                                   'font-size:13px;font-weight:600;cursor:pointer;' +
+                                   'background:#fff;color:#374151;">Cancelar</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+
+        var _cerrar = function () { modal.style.display = 'none'; };
+        document.getElementById('fmt-jefa-cerrar').addEventListener('click', _cerrar);
+        document.getElementById('fmt-jefa-cancelar').addEventListener('click', _cerrar);
+        modal.addEventListener('click', function (e) { if (e.target === modal) _cerrar(); });
+    }
+
+    function _aplicarFirmaJefa(dataUrl, campoIdExistente) {
+        _recortarFirma(dataUrl, function (urlRecortada, natW, natH) {
+            if (campoIdExistente) {
+                _valores[campoIdExistente] = urlRecortada;
+                var el = document.querySelector('.pdf-campo[data-id="' + campoIdExistente + '"]');
+                if (el) {
+                    var img2 = el.querySelector('.pdf-firma-img');
+                    if (img2) img2.src = urlRecortada;
+                    var pw   = el.closest('.pdf-pw');
+                    var dims = (pw.dataset.pw || '0,0').split(',');
+                    var pwW  = parseFloat(dims[0]) || pw.offsetWidth;
+                    var pwH  = parseFloat(dims[1]) || pw.offsetHeight;
+                    var wPct = Math.min(20, natW / pwW * 100);
+                    var hPct = wPct * (natH / natW) * (pwW / pwH);
+                    var campo = _campos.find(function (c) { return c.id === campoIdExistente; });
+                    if (campo) { campo.w = wPct; campo.h = hPct; }
+                    el.style.width     = (wPct / 100 * pwW) + 'px';
+                    el.style.minHeight = (hPct / 100 * pwH) + 'px';
+                }
+            } else {
+                var pw1  = document.querySelector('.pdf-pw[data-page="1"]');
+                var pwW1 = 800, pwH1 = 1132;
+                if (pw1) {
+                    var d = (pw1.dataset.pw || '800,1132').split(',');
+                    pwW1  = parseFloat(d[0]) || pw1.offsetWidth;
+                    pwH1  = parseFloat(d[1]) || pw1.offsetHeight;
+                }
+                var wPct1 = Math.min(20, natW / pwW1 * 100);
+                var hPct1 = wPct1 * (natH / natW) * (pwW1 / pwH1);
+
+                var id = 'f' + _nextId++;
+                var c  = {
+                    id:    id,
+                    page:  1,
+                    x:     5,
+                    y:     5,
+                    w:     wPct1,
+                    h:     hPct1,
+                    label: 'Firma recibe',
+                    tipo:  'firma_jefe'
+                };
+                _campos.push(c);
+                _valores[id] = urlRecortada;
+                _renderCampo(c);
+            }
+        });
+    }
+
+    function _abrirPickerJefa(campoIdExistente) {
+        _inyectarModalJefa();
+
+        var modal = document.getElementById('fmt-jefa-modal');
+        var grid  = document.getElementById('fmt-jefa-grid');
+        var jefas = window._fmtJefas || [];
+
+        grid.innerHTML = '';
+
+        if (jefas.length === 0) {
+            grid.innerHTML =
+                '<p style="grid-column:1/-1;font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">' +
+                'No hay Jefas de Servicio con firma registrada.</p>';
+        } else {
+            jefas.forEach(function (jefa) {
+                if (!jefa.firma) return;
+
+                var dataUrl = _firmaADataUrl(jefa.firma);
+
+                var card = document.createElement('button');
+                card.type = 'button';
+                card.style.cssText =
+                    'border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 8px;' +
+                    'background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s;' +
+                    'display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;';
+                card.addEventListener('mouseenter', function () {
+                    card.style.borderColor = '#059669';
+                    card.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.15)';
+                });
+                card.addEventListener('mouseleave', function () {
+                    card.style.borderColor = '#e5e7eb';
+                    card.style.boxShadow   = 'none';
+                });
+
+                var preview = document.createElement('img');
+                preview.src = dataUrl;
+                preview.style.cssText =
+                    'max-height:52px;width:auto;max-width:100%;display:block;mix-blend-mode:multiply;';
+
+                var nombre = document.createElement('span');
+                nombre.textContent = jefa.nombre;
+                nombre.style.cssText =
+                    'font-size:11px;font-weight:600;color:#374151;white-space:nowrap;' +
+                    'overflow:hidden;text-overflow:ellipsis;max-width:120px;display:block;';
+
+                card.appendChild(preview);
+                card.appendChild(nombre);
+
+                if (jefa.cargo) {
+                    var area = document.createElement('span');
+                    area.textContent = jefa.cargo;
+                    area.style.cssText =
+                        'font-size:10px;color:#9ca3af;white-space:nowrap;' +
+                        'overflow:hidden;text-overflow:ellipsis;max-width:120px;display:block;';
+                    card.appendChild(area);
+                }
+
+                card.addEventListener('click', function () {
+                    modal.style.display = 'none';
+                    _aplicarFirmaJefa(dataUrl, campoIdExistente);
+                });
+
+                grid.appendChild(card);
+            });
+
+            if (!grid.hasChildNodes()) {
+                grid.innerHTML =
+                    '<p style="grid-column:1/-1;font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">' +
+                    'No hay Jefas de Servicio con firma registrada.</p>';
+            }
+        }
+
+        modal.style.display = 'flex';
+    }
+
     /* ===== API pública ===== */
     window.pdfOverlay = {
 
@@ -720,9 +884,23 @@
             _abrirPickerFirma(null);
         },
 
+        abrirPickerFirmaJefa: function () {
+            _abrirPickerJefa(null);
+        },
+
+        enviarFirmaIngeniero: function () {
+            _leerValores();
+            var firmaCampo = _campos.find(function (c) { return c.tipo === 'firma'; });
+            if (!firmaCampo || !_valores[firmaCampo.id]) {
+                alert('Agrega tu firma antes de enviar el reporte.');
+                return;
+            }
+            _lwCall('guardarFirmaYEnviar', _valores[firmaCampo.id]);
+        },
+
         guardarPlantilla: function () {
             _leerValores();
-            var camposPlantilla = _campos.filter(function (c) { return c.tipo !== 'firma'; });
+            var camposPlantilla = _campos.filter(function (c) { return c.tipo !== 'firma' && c.tipo !== 'firma_jefe'; });
             _lwCall('guardarCamposPdf', JSON.stringify(camposPlantilla));
         },
 
@@ -734,8 +912,32 @@
         guardarBorrador: function () {
             _leerValores();
             _lwCall('guardarBorradorPdf', JSON.stringify(_campos), JSON.stringify(_valores));
+        },
+
+        initViewer: function (opts) {
+            setTimeout(function () {
+                var cId = opts.containerId || 'pdf-overlay-viewer';
+                if (!document.getElementById(cId)) return;
+                _init({
+                    containerId: cId,
+                    url:         opts.url,
+                    campos:      opts.campos  || [],
+                    valores:     opts.valores || {},
+                    modoVisor:   true,
+                });
+            }, 120);
         }
     };
+
+    /* ===== Evento DOM directo (para páginas de firma sin dispatch Livewire) ===== */
+    document.addEventListener('fmt:init-direct', function (e) {
+        var p = e.detail;
+        if (p.ingenieros) window._fmtIngenieros = p.ingenieros;
+        setTimeout(function () {
+            if (!document.getElementById('pdf-overlay-editor')) return;
+            _init({ url: p.url, campos: p.campos || [], valores: p.valores || {}, modoVisor: false });
+        }, 50);
+    });
 
     /* ===== Escuchar eventos Livewire ===== */
     document.addEventListener('livewire:init', function () {
@@ -743,6 +945,7 @@
         Livewire.on('fmt:editar-pdf', function (params) {
             var p = Array.isArray(params) ? params[0] : params;
             if (p.ingenieros) window._fmtIngenieros = p.ingenieros;
+            if (p.jefas)      window._fmtJefas      = p.jefas;
             setTimeout(function () {
                 if (!document.getElementById('pdf-overlay-editor')) return;
                 _init({ url: p.url, campos: p.campos || [], valores: p.valores || {}, modoVisor: false });
@@ -755,6 +958,20 @@
                 if (!document.getElementById('pdf-overlay-viewer')) return;
                 _init({ url: p.url, campos: p.campos || [], valores: p.valores || {}, modoVisor: true });
             }, 120);
+        });
+
+        Livewire.on('fmt:ver-mantenimiento', function (params) {
+            var p = Array.isArray(params) ? params[0] : params;
+            setTimeout(function () {
+                if (!document.getElementById('pdf-overlay-mantenimiento')) return;
+                _init({
+                    containerId: 'pdf-overlay-mantenimiento',
+                    url:         p.url,
+                    campos:      p.campos  || [],
+                    valores:     p.valores || {},
+                    modoVisor:   true,
+                });
+            }, 200);
         });
     });
 

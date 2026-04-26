@@ -11,6 +11,7 @@ use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\DB;
 
 class Formatos extends Page
 {
@@ -18,8 +19,8 @@ class Formatos extends Page
 
     protected static string $view          = 'filament.pages.formatos';
     protected static ?string $navigationIcon  = 'heroicon-o-document-text';
-    protected static ?string $navigationLabel = 'Formatos';
-    protected static ?string $title           = 'Formatos';
+    protected static ?string $navigationLabel = 'Mantenimientos y procesos';
+    protected static ?string $title           = 'Mantenimientos y procesos';
     protected static ?int    $navigationSort  = -1;
 
     public function getMaxContentWidth(): MaxWidth|string|null
@@ -54,13 +55,24 @@ class Formatos extends Page
     public string $filtroFechaDesde  = '';
     public string $filtroFechaHasta  = '';
 
+    // --- Modal mantenimientos recibidos (solo jefes de servicio) ---
+    public bool   $modalMantenimientosAbierto = false;
+    public ?int   $mantenimientoViendoId      = null;
+    public string $mBusqueda                  = '';
+    public string $mFiltroFormato             = '';
+    public string $mFechaDesde                = '';
+    public string $mFechaHasta                = '';
+
     // ---------------------------------------------------------------
     // Datos para la vista
     // ---------------------------------------------------------------
 
     public function getFormatos()
     {
-        return Formato::withCount('registros')->latest()->get();
+        return Formato::withCount([
+            'registros',
+            'registros as borradores_count' => fn ($q) => $q->where('es_borrador', true),
+        ])->latest()->get();
     }
 
     public function getFormatoActual(): ?Formato
@@ -68,11 +80,12 @@ class Formatos extends Page
         return $this->formatoId ? Formato::find($this->formatoId) : null;
     }
 
-    public function getHistorial()
+    public function getBorradores()
     {
         if (!$this->formatoId) return collect();
 
         return Registro::where('formato_id', $this->formatoId)
+            ->where('es_borrador', true)
             ->with('usuario')
             ->when($this->busquedaHistorial, fn ($q) =>
                 $q->where('identificador', 'like', '%' . $this->busquedaHistorial . '%')
@@ -132,6 +145,24 @@ class Formatos extends Page
             ->toArray();
     }
 
+    private function getJefasFirmas(): array
+    {
+        return \App\Models\PersonalReportante::where('es_jefe_servicio', true)
+            ->where('estado', 'aprobado')
+            ->whereNotNull('firma')
+            ->where('firma', '!=', '')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'area_jefe_servicio', 'firma'])
+            ->map(fn($j) => [
+                'id'     => $j->id,
+                'nombre' => $j->nombre,
+                'cargo'  => $j->area_jefe_servicio,
+                'firma'  => $j->firma,
+            ])
+            ->values()
+            ->toArray();
+    }
+
     public function irEditar(int $formatoId): void
     {
         $formato = Formato::findOrFail($formatoId);
@@ -146,6 +177,7 @@ class Formatos extends Page
             campos:     $formato->campos_json ?? [],
             valores:    (object)[],
             ingenieros: $this->getIngenierosFirmas(),
+            jefas:      $this->getJefasFirmas(),
         );
     }
 
@@ -168,17 +200,18 @@ class Formatos extends Page
             campos:     $campos,
             valores:    $valores ?: (object)[],
             ingenieros: $this->getIngenierosFirmas(),
+            jefas:      $this->getJefasFirmas(),
         );
     }
 
-    public function irHistorial(int $formatoId): void
+    public function irBorradores(int $formatoId): void
     {
         $this->formatoId         = $formatoId;
         $this->busquedaHistorial = '';
         $this->filtroUsuario     = '';
         $this->filtroFechaDesde  = '';
         $this->filtroFechaHasta  = '';
-        $this->vista             = 'historial';
+        $this->vista             = 'borradores';
     }
 
     public function verRegistro(int $registroId): void
@@ -351,6 +384,86 @@ class Formatos extends Page
         }
 
         Notification::make()->title('Borrador guardado. Puedes continuar más tarde.')->success()->send();
+    }
+
+    // ---------------------------------------------------------------
+    // Modal mantenimientos recibidos (jefes de servicio)
+    // ---------------------------------------------------------------
+
+    public function abrirModalMantenimientos(): void
+    {
+        $this->modalMantenimientosAbierto = true;
+        $this->mantenimientoViendoId      = null;
+        $this->mBusqueda                  = '';
+        $this->mFiltroFormato             = '';
+        $this->mFechaDesde                = '';
+        $this->mFechaHasta                = '';
+    }
+
+    public function cerrarModalMantenimientos(): void
+    {
+        $this->modalMantenimientosAbierto = false;
+        $this->mantenimientoViendoId      = null;
+    }
+
+    public function getMantenimientosPendientes()
+    {
+        return Registro::where('es_borrador', false)
+            ->where('estado', 'pendiente')
+            ->with(['formato:id,nombre', 'usuario:id,name'])
+            ->when($this->mBusqueda, fn ($q) =>
+                $q->where('identificador', 'like', '%' . $this->mBusqueda . '%')
+            )
+            ->when($this->mFiltroFormato, fn ($q) =>
+                $q->where('formato_id', $this->mFiltroFormato)
+            )
+            ->when($this->mFechaDesde, fn ($q) =>
+                $q->whereDate('created_at', '>=', $this->mFechaDesde)
+            )
+            ->when($this->mFechaHasta, fn ($q) =>
+                $q->whereDate('created_at', '<=', $this->mFechaHasta)
+            )
+            ->latest()
+            ->get();
+    }
+
+    public function verMantenimiento(int $registroId): void
+    {
+        $this->mantenimientoViendoId = $registroId;
+        $registro = Registro::with('formato')->findOrFail($registroId);
+
+        $data    = json_decode($registro->contenido_editado ?? '{}', true) ?? [];
+        $campos  = $data['campos']  ?? [];
+        $valores = $data['valores'] ?? [];
+
+        $this->dispatch('fmt:ver-mantenimiento',
+            url:     route('formato.archivo', $registro->formato),
+            campos:  $campos,
+            valores: $valores ?: (object)[],
+        );
+    }
+
+    public function firmarMantenimiento(int $registroId): void
+    {
+        $registro = Registro::findOrFail($registroId);
+
+        if ($registro->estado !== 'pendiente') {
+            Notification::make()->title('Este mantenimiento ya fue procesado.')->warning()->send();
+            return;
+        }
+
+        $registro->update([
+            'estado'        => 'en_curso',
+            'firmado_por_id' => Auth::id(),
+            'firmado_at'    => now(),
+        ]);
+
+        $this->mantenimientoViendoId = null;
+
+        Notification::make()
+            ->title('Mantenimiento firmado y enviado correctamente.')
+            ->success()
+            ->send();
     }
 
     // ---------------------------------------------------------------

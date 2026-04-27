@@ -177,11 +177,11 @@ class HospitalThemeServiceProvider extends ServiceProvider
             'panels::body.end',
             fn (): string => Blade::render('
                 <div style="background-color: #691C32; color: white; text-align: center; padding: 1rem; margin-top: auto;">
-                    <p style="margin: 0; color: white;">
-                        Sistema de Activo Fijo.
+                    <p style="margin: 0; color: white; font-weight: bold;">
+                        Área de Ingeniería Biomédica
                     </p>
-                    <p style="margin: 0; color: white;">
-                    Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"
+                    <p style="margin: 0; color: white; font-size: 0.75rem;">
+                        Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"
                     </p>
                 </div>
             ')

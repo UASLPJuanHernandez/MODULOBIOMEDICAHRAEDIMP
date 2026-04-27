@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventarioEquipo extends Model
 {
@@ -59,6 +60,13 @@ class InventarioEquipo extends Model
         'tiene_contrato' => 'boolean',
         'fin_vida_util' => 'boolean',
     ];
+
+    // Relaciones
+    public function historiales(): HasMany
+    {
+        return $this->hasMany(InventarioEquipoHistorial::class, 'inventario_equipo_id')
+                    ->orderBy('created_at', 'desc');
+    }
 
     // Scopes
     public function scopeEnFuncionamiento($query)

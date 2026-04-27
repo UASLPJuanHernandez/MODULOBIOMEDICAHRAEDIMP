@@ -209,7 +209,7 @@
     </div>
 
     <div class="footer">
-        <p>Documento generado el {{ $fecha }} por el sistema de Activo Fijo del Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
+        <p>Documento generado el {{ $fecha }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
         <p>Orden de Servicio No. {{ $orden->numero_orden }} - Versión {{ $orden->version }}</p>
     </div>
 </body>

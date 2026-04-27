@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Exports\InventarioEquipoExport;
 use App\Filament\Resources\InventarioEquipoResource\Pages;
+use App\Filament\Resources\InventarioEquipoResource\RelationManagers\HistorialesRelationManager;
 use App\Models\InventarioEquipo;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -22,15 +23,11 @@ class InventarioEquipoResource extends Resource
 {
     protected static ?string $model = InventarioEquipo::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-
+    protected static ?string $navigationIcon  = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Inventario';
-
-    protected static ?string $modelLabel = 'Equipo';
-
+    protected static ?string $modelLabel      = 'Equipo';
     protected static ?string $pluralModelLabel = 'Inventario de Equipos';
-
-    protected static ?int $navigationSort = 1;
+    protected static ?int    $navigationSort  = 1;
 
     public static function form(Form $form): Form
     {
@@ -352,30 +349,76 @@ class InventarioEquipoResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation()
+                    ->modalHeading('Eliminar equipo del inventario')
+                    ->modalDescription('Se generará el vale de retiro y se guardará en Documentos generados. Esta acción no se puede deshacer.')
+                    ->modalSubmitActionLabel('Sí, eliminar')
+                    ->action(function (InventarioEquipo $record) {
+                        $vale = (new \App\Services\ValeEntregaService())->registrarRetiro($record);
+                        $record->delete();
+                        \Filament\Notifications\Notification::make()
+                            ->title('Equipo eliminado')
+                            ->body('El vale de retiro está disponible en Documentos generados.')
+                            ->success()
+                            ->persistent()
+                            ->actions([
+                                \Filament\Notifications\Actions\Action::make('descargar')
+                                    ->label('Descargar vale')
+                                    ->url(route('inventario.vale.redescargar', $vale))
+                                    ->openUrlInNewTab()
+                                    ->button(),
+                            ])
+                            ->send();
+                    }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('deseleccionar')
-                        ->label('Quitar selección')
-                        ->icon('heroicon-o-x-mark')
-                        ->color('gray')
-                        ->action(fn () => null)
-                        ->deselectRecordsAfterCompletion(),
-                    Tables\Actions\ExportBulkAction::make()
-                        ->hidden(),
-                    Tables\Actions\BulkAction::make('exportar_seleccion')
-                        ->label('Exportar selección a Excel')
-                        ->icon('heroicon-o-arrow-down-tray')
-                        ->color('success')
-                        ->action(function (\Illuminate\Support\Collection $records) {
-                            $fecha = Carbon::now()->format('Y-m-d_H-i');
-                            $nombre = "Inventario_Equipos_Seleccion_{$fecha}.xlsx";
-                            return Excel::download(new InventarioEquipoExport($records), $nombre);
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn () => auth()->user()?->hasRole('Administrador') ?? false),
-                ]),
+                Tables\Actions\BulkAction::make('exportar_seleccion')
+                    ->label('Exportar selección')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function (\Illuminate\Support\Collection $records) {
+                        $fecha = Carbon::now()->format('Y-m-d_H-i');
+                        $nombre = "Inventario_Equipos_Seleccion_{$fecha}.xlsx";
+                        return Excel::download(new InventarioEquipoExport($records), $nombre);
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('deseleccionar')
+                    ->label('Quitar selección')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->action(fn () => null)
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('eliminar_seleccion')
+                    ->label('Eliminar selección')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Eliminar equipos seleccionados')
+                    ->modalDescription('Se generará un vale de retiro por cada equipo y se guardarán en Documentos generados. Esta acción no se puede deshacer.')
+                    ->modalSubmitActionLabel('Sí, eliminar todos')
+                    ->action(function (\Illuminate\Support\Collection $records): void {
+                        $service = new \App\Services\ValeEntregaService();
+                        $vales   = [];
+                        foreach ($records as $record) {
+                            $vales[] = $service->registrarRetiro($record);
+                            $record->delete();
+                        }
+                        $total = count($vales);
+                        \Filament\Notifications\Notification::make()
+                            ->title("{$total} equipos eliminados")
+                            ->body('Los vales de retiro están guardados en Documentos generados.')
+                            ->success()
+                            ->persistent()
+                            ->actions([
+                                \Filament\Notifications\Actions\Action::make('ir_docs')
+                                    ->label('Ver documentos generados')
+                                    ->url(\App\Filament\Pages\DocumentosGenerados::getUrl())
+                                    ->button(),
+                            ])
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->striped()
             ->paginated([25, 50, 100, 'all']);
@@ -383,7 +426,9 @@ class InventarioEquipoResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            HistorialesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

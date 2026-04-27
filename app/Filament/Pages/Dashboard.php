@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Ingeniero;
 use App\Models\ReportePizarron;
 use Filament\Pages\Dashboard as BaseDashboard;
 
@@ -19,18 +20,13 @@ class Dashboard extends BaseDashboard
         return '';
     }
 
-    public static array $responsables = [
-        'Ing. María',
-        'Ing. Renata',
-        'Ing. María José',
-        'Ing. Ana Julia',
-        'Ing. Daniela',
-        'Ing. Flor',
-        'Ing. Pedro',
-        'Ing. Sergio',
-        'Ing. José',
-        'Ing. Juan Pablo',
-    ];
+    public static function getResponsables(): array
+    {
+        return Ingeniero::activos()
+            ->orderBy('nombre')
+            ->pluck('nombre')
+            ->toArray();
+    }
 
     public function getWidgets(): array
     {

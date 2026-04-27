@@ -95,7 +95,7 @@
 
 <!-- Footer -->
 <div class="mt-6 text-center text-xs text-gray-600 border-t border-gray-300 pt-3">
-    <p>Generado el {{ $fechaGeneracion }} - Sistema de Activo Fijo HRAE "Dr. Ignacio Morones Prieto"</p>
+    <p>Generado el {{ $fechaGeneracion }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
     @php
     $footerImagePath = public_path('images/vales/pie de pagina vale.jpg');
     if (file_exists($footerImagePath)) {

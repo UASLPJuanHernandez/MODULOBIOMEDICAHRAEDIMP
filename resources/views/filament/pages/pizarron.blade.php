@@ -12,7 +12,7 @@
         {{-- Titulo discreto --}}
         <div style="text-align: center; margin-bottom: 32px;">
             <p style="color: #9ca3af; font-size: 13px; font-family: sans-serif;">
-                Reportes en tiempo real. Departamento de Ingeniería Biomédica del HRAE
+                Reportes en tiempo real. Área de Ingeniería Biomédica del HRAE
             </p>
         </div>
 
@@ -74,6 +74,7 @@
 
                         {{-- POST-IT MINIMIZADO --}}
                         <div
+                            data-reporte="{{ $reporte->id }}"
                             wire:click="toggleMinimizado({{ $reporte->id }})"
                             title="Click para expandir"
                             style="
@@ -111,7 +112,9 @@
                     @else
 
                         {{-- POST-IT EXPANDIDO --}}
-                        <div style="
+                        <div
+                            data-reporte="{{ $reporte->id }}"
+                            style="
                             background: {{ $colorFondo }};
                             width: 290px;
                             border-radius: 2px 8px 8px 2px;
@@ -159,8 +162,20 @@
 
                             <div style="margin-bottom: 14px;">
                                 <span style="font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.5px;">Descripción</span>
-                                <p style="font-size: 11px; color: #333; margin: 4px 0 0 0; line-height: 1.5;">{{ $reporte->descripcion }}</p>
+                                <p style="font-size: 11px; color: #333; margin: 4px 0 0 0; line-height: 1.5;">{{ $reporte->descripcion_original ?? $reporte->descripcion }}</p>
                             </div>
+
+                            @if($reporte->reportante_nombre)
+                            <div style="margin-bottom: 8px;">
+                                <span style="font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.5px;">Reportado por</span>
+                                <p style="font-size: 11px; color: #555; margin: 3px 0 0 0;">
+                                    {{ $reporte->reportante_nombre }}
+                                    @if($reporte->reportante_servicio)
+                                        &middot; <em>{{ $reporte->reportante_servicio }}</em>
+                                    @endif
+                                </p>
+                            </div>
+                            @endif
 
                             {{-- Separador --}}
                             <hr style="border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: 12px 0;">
@@ -206,7 +221,7 @@
                                     style="width: 100%; padding: 5px 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white; cursor: pointer;"
                                 >
                                     <option value="">— Sin asignar —</option>
-                                    @foreach(\App\Filament\Pages\Dashboard::$responsables as $ing)
+                                    @foreach(\App\Filament\Pages\Dashboard::getResponsables() as $ing)
                                         <option value="{{ $ing }}" {{ $reporte->responsable === $ing ? 'selected' : '' }}>
                                             {{ $ing }}
                                         </option>
@@ -252,33 +267,11 @@
 
     </div>
 
-    {{-- Boton nueva pestaña debajo del pizarron --}}
-    <div style="display: flex; justify-content: center; margin-top: 16px;">
-        <a
-            href="{{ route('pizarron.standalone') }}"
-            target="_blank"
-            style="
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 7px 16px;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 12px;
-                color: #6b7280;
-                text-decoration: none;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-            "
-            onmouseover="this.style.background='#f9fafb'"
-            onmouseout="this.style.background='white'"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-            Ver en nueva pestaña
-        </a>
-    </div>
+
+    @script
+    <script>
+        setInterval(() => $wire.$refresh(), 8000);
+    </script>
+    @endscript
 
 </x-filament-panels::page>

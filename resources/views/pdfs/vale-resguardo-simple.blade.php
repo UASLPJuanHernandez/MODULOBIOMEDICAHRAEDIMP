@@ -165,7 +165,7 @@
         @endif
 
         <h1>VALE DE RESGUARDO</h1>
-        <h2>Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</h2>
+        <h2>Área de Ingeniería Biomédica — Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</h2>
         <h3>N° {{ $vale->numero_vale }}</h3>
     </div>
 

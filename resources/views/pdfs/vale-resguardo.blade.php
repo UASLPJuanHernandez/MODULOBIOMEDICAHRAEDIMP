@@ -153,7 +153,7 @@
     @endif
 
     <div class="footer">
-        <p>Documento generado el {{ $fecha }} por el Sistema de Activo Fijo del Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
+        <p>Documento generado el {{ $fecha }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
         <p>Este documento es válido sin firma autógrafa conforme a las disposiciones vigentes</p>
     </div>
 </body>

@@ -196,7 +196,7 @@
     </div>
     
     <div class="footer">
-        <p>Generado el {{ $fechaGeneracion }} - Sistema de Activo Fijo HRAE "Dr. Ignacio Morones Prieto"</p>
+        <p>Generado el {{ $fechaGeneracion }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
         
         @php
         $footerImagePath = public_path('images/vales/pie de pagina vale.jpg');

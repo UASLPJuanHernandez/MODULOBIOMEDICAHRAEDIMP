@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -78,11 +76,6 @@ class Mobiliario extends Model
     ];
 
     // Relaciones
-    public function clasificacionBien(): BelongsTo
-    {
-        return $this->belongsTo(ClasificacionBien::class, 'clasificacion_bienes_id');
-    }
-
     public function tipoMobiliario(): BelongsTo
     {
         return $this->belongsTo(TipoMobiliario::class);
@@ -96,95 +89,6 @@ class Mobiliario extends Model
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);
-    }
-
-    public function movimientos(): HasMany
-    {
-        return $this->hasMany(Movimiento::class);
-    }
-
-    public function movimientosMultiples(): BelongsToMany
-    {
-        return $this->belongsToMany(Movimiento::class, 'movimiento_mobiliario')
-                    ->withPivot('area_anterior_id')
-                    ->withTimestamps();
-    }
-
-    public function ultimoMovimiento(): HasOne
-    {
-        return $this->hasOne(Movimiento::class)->latestOfMany();
-    }
-
-    public function ubicacionActual(): BelongsTo
-    {
-        return $this->belongsTo(Localizacion::class, 'localizacion_id');
-    }
-
-    public function ubicacionReal()
-    {
-        // Buscar el último movimiento (tanto individual como múltiple)
-        $ultimoMovimientoIndividual = $this->movimientos()
-            ->with('areaActual')
-            ->orderBy('fecha_movimiento', 'desc')
-            ->first();
-            
-        $ultimoMovimientoMultiple = $this->movimientosMultiples()
-            ->with('areaActual')
-            ->orderBy('fecha_movimiento', 'desc')
-            ->first();
-        
-        // Determinar cuál es más reciente
-        $ultimoMovimiento = null;
-        
-        if ($ultimoMovimientoIndividual && $ultimoMovimientoMultiple) {
-            $ultimoMovimiento = $ultimoMovimientoIndividual->fecha_movimiento->greaterThan($ultimoMovimientoMultiple->fecha_movimiento)
-                ? $ultimoMovimientoIndividual
-                : $ultimoMovimientoMultiple;
-        } elseif ($ultimoMovimientoIndividual) {
-            $ultimoMovimiento = $ultimoMovimientoIndividual;
-        } elseif ($ultimoMovimientoMultiple) {
-            $ultimoMovimiento = $ultimoMovimientoMultiple;
-        }
-        
-        if ($ultimoMovimiento && $ultimoMovimiento->areaActual) {
-            return $ultimoMovimiento->areaActual;
-        }
-        
-        // Si no tiene movimientos, usar la ubicación original
-        return $this->localizacion;
-    }
-
-    public function tieneMovimientos(): bool
-    {
-        return $this->movimientos()->count() > 0;
-    }
-
-    public function ultimaFechaMovimiento(): ?Carbon
-    {
-        return $this->ultimoMovimiento?->fecha_movimiento;
-    }
-
-    public function resumenUbicacion(): string
-    {
-        $ubicacion = $this->ubicacionReal();
-        if (!$ubicacion) {
-            return 'Sin ubicación';
-        }
-        
-        $movimientos = $this->movimientos()->count();
-        $suffix = $movimientos > 0 ? " ({$movimientos} mov.)" : " (original)";
-        
-        return $ubicacion->ubicacion_resumida . $suffix;
-    }
-
-    public function vales(): HasMany
-    {
-        return $this->hasMany(Vale::class);
-    }
-
-    public function valesMultiples(): BelongsToMany
-    {
-        return $this->belongsToMany(Vale::class, 'vale_mobiliario');
     }
 
     public function ordenesServicio(): HasMany
@@ -269,7 +173,6 @@ class Mobiliario extends Model
             'ultimo_mantenimiento' => $this->ultimoMantenimiento?->fecha_completado,
             'dias_sin_mantenimiento' => $this->diasSinMantenimiento(),
             'tiene_activos' => $this->tieneMantenimientosActivos(),
-            'con_vales' => $mantenimientos->whereNotNull('folio_vale')->count(),
         ];
     }
 
@@ -421,7 +324,7 @@ class Mobiliario extends Model
         return $result->getDataUri();
     }
 
-    // Métodos auxiliares
+    // Scopes y métodos auxiliares
     public function getDescripcionCompletaAttribute(): string
     {
         return "{$this->numero_control} - {$this->marca} {$this->modelo} - {$this->descripcion}";
@@ -430,11 +333,6 @@ class Mobiliario extends Model
     public function getValorActualAttribute(): float
     {
         return $this->precio - ($this->depreciacion_registrada ?? 0);
-    }
-
-    public function getUltimoMovimientoAttribute()
-    {
-        return $this->movimientos()->latest('fecha_movimiento')->first();
     }
 
     // Scopes
@@ -460,13 +358,6 @@ class Mobiliario extends Model
     public function scopeByMetodoAdquisicion($query, string $metodo)
     {
         return $query->where('metodo_adquisicion', $metodo);
-    }
-
-    public function scopeByGrupoClasificacion($query, int $grupo)
-    {
-        return $query->whereHas('clasificacionBien', function (Builder $q) use ($grupo) {
-            $q->where('grupo', $grupo);
-        });
     }
 
     public function scopeDisponibles($query)

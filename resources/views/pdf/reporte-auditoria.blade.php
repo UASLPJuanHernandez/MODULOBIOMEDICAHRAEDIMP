@@ -439,7 +439,7 @@
     
     <!-- Footer -->
     <div class="footer">
-        <p>Documento generado el {{ now()->format('d/m/Y H:i') }} por el Sistema de Activo Fijo del Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
+        <p>Documento generado el {{ now()->format('d/m/Y H:i') }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
         <p>Este documento es válido sin firma autógrafa conforme a las disposiciones vigentes</p>
         
         @php

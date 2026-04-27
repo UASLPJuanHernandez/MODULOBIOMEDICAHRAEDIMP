@@ -207,6 +207,6 @@
 
 <!-- Footer -->
 <div class="mt-8 text-center text-sm text-gray-600 border-t border-gray-300 pt-4">
-    <p>Documento generado el {{ now()->format('d/m/Y H:i') }} por el Sistema de Activo Fijo del Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
+    <p>Documento generado el {{ now()->format('d/m/Y H:i') }} — Área de Ingeniería Biomédica, Hospital Regional de Alta Especialidad "Dr. Ignacio Morones Prieto"</p>
     <p class="mt-1">Este documento es válido sin firma autógrafa conforme a las disposiciones vigentes</p>
 </div>

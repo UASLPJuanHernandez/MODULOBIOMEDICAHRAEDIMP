@@ -3,7 +3,10 @@
 namespace App\Filament\Resources\InventarioEquipoResource\Pages;
 
 use App\Filament\Resources\InventarioEquipoResource;
+use App\Services\ValeEntregaService;
 use Filament\Actions;
+use Filament\Notifications\Notification;
+use Filament\Notifications\Actions\Action as NotifAction;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\TextEntry;
@@ -19,6 +22,62 @@ class ViewInventarioEquipo extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+
+            Actions\Action::make('vale_entrega')
+                ->label('Vale de Entrega')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('warning')
+                ->url(fn () => route('inventario.equipo.vale-entrega', $this->record))
+                ->openUrlInNewTab(),
+
+            Actions\Action::make('vale_retiro')
+                ->label('Vale de Retiro')
+                ->icon('heroicon-o-document-minus')
+                ->color('danger')
+                ->url(fn () => route('inventario.equipo.vale-retiro', $this->record))
+                ->openUrlInNewTab(),
+
+            Actions\Action::make('descargar_historial_pdf')
+                ->label('Historial PDF')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->url(fn () => route('inventario.equipo.historial.pdf', $this->record))
+                ->openUrlInNewTab(),
+
+            Actions\Action::make('eliminar')
+                ->label('Eliminar')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Eliminar registro del inventario')
+                ->modalDescription('Se generará el vale de retiro automáticamente y quedará disponible en Documentos generados. Esta acción no se puede deshacer.')
+                ->modalIcon('heroicon-o-exclamation-triangle')
+                ->modalIconColor('warning')
+                ->modalSubmitActionLabel('Sí, eliminar')
+                ->action(function (): void {
+                    // 1. Registrar vale ANTES de eliminar (mientras el registro aún existe)
+                    $vale = (new ValeEntregaService())->registrarRetiro($this->record);
+
+                    // 2. Eliminar el equipo
+                    $this->record->delete();
+
+                    // 3. Notificación persistente con botón de descarga directa
+                    Notification::make()
+                        ->title('Equipo eliminado')
+                        ->body('El vale de retiro fue guardado en Documentos generados.')
+                        ->success()
+                        ->persistent()
+                        ->actions([
+                            NotifAction::make('descargar')
+                                ->label('Descargar vale de retiro')
+                                ->url(route('inventario.vale.redescargar', $vale))
+                                ->openUrlInNewTab()
+                                ->button(),
+                        ])
+                        ->send();
+
+                    $this->redirect($this->getResource()::getUrl('index'));
+                }),
         ];
     }
 

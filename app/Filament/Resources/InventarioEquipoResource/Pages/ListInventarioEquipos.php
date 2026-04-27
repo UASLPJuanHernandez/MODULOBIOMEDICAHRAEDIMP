@@ -20,6 +20,11 @@ class ListInventarioEquipos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('historial_general')
+                ->label('Historial General')
+                ->icon('heroicon-o-clock')
+                ->color('gray')
+                ->url(fn () => \App\Filament\Pages\HistorialInventario::getUrl()),
             Action::make('exportar_excel')
                 ->label('Descargar Excel')
                 ->icon('heroicon-o-arrow-down-tray')

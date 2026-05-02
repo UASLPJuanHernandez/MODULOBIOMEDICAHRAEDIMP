@@ -39,7 +39,7 @@ class DocumentosGenerados extends Page
     public string $vFechaHasta  = '';
 
     // Filtros — Registros de formatos
-    public string $rSubTab          = 'pendientes'; // 'pendientes' | 'en_curso'
+    public string $rSubTab          = 'pendientes'; // 'pendientes' | 'culminado'
     public string $rFiltroFormato   = '';
     public string $rFiltroIngeniero = '';
     public string $rBusqueda        = '';
@@ -139,10 +139,14 @@ class DocumentosGenerados extends Page
 
     public function getRegistros()
     {
+        $estados = $this->rSubTab === 'culminado'
+            ? ['culminado']
+            : ['pendiente', 'en_firma'];
+
         return Registro::query()
             ->where('es_borrador', false)
-            ->where('estado', $this->rSubTab === 'en_curso' ? 'en_curso' : 'pendiente')
-            ->with(['formato:id,nombre', 'usuario:id,name', 'firmadoPor:id,name'])
+            ->whereIn('estado', $estados)
+            ->with(['formato:id,nombre', 'usuario:id,name', 'firmadoPor:id,name', 'jefe:id,nombre'])
             ->when($this->rFiltroFormato, fn ($q) => $q->where('formato_id', $this->rFiltroFormato))
             ->when($this->rFiltroIngeniero, fn ($q) => $q->where('usuario_id', $this->rFiltroIngeniero))
             ->when($this->rBusqueda, fn ($q) =>
@@ -173,7 +177,7 @@ class DocumentosGenerados extends Page
 
     public function getBadgeRegistros(): int
     {
-        return Registro::where('es_borrador', false)->where('estado', 'pendiente')->count();
+        return Registro::where('es_borrador', false)->whereIn('estado', ['pendiente', 'en_firma'])->count();
     }
 
     public function getBadgeBitacoras(): int
@@ -254,6 +258,28 @@ class DocumentosGenerados extends Page
                 'concretado'    => true,
                 'concretado_at' => now(),
             ]);
+    }
+
+    // ---------------------------------------------------------------
+    // Modal: vista previa de vale de inventario
+    // ---------------------------------------------------------------
+    public ?int $valeViendoId = null;
+
+    public function verVale(int $id): void
+    {
+        $this->valeViendoId = $id;
+    }
+
+    public function cerrarVale(): void
+    {
+        $this->valeViendoId = null;
+    }
+
+    public function getValeViendo(): ?ValeInventario
+    {
+        return $this->valeViendoId
+            ? ValeInventario::find($this->valeViendoId)
+            : null;
     }
 
     // ---------------------------------------------------------------
@@ -375,5 +401,51 @@ class DocumentosGenerados extends Page
         $this->vistaDoc         = 'lista';
         $this->registroViendoId = null;
         $this->tabActiva        = 'registros';
+    }
+
+    // ---------------------------------------------------------------
+    // Modal: enviar registro a Jefe de Servicio
+    // ---------------------------------------------------------------
+    public ?int    $regEnviarId     = null;
+    public ?int    $regEnviarJefeId = null;
+    public ?string $regEnviarTipo   = null;
+    public ?string $regEnviarError  = null;
+
+    public function abrirModalEnviar(int $registroId): void
+    {
+        $this->regEnviarId     = $registroId;
+        $this->regEnviarJefeId = null;
+        $this->regEnviarTipo   = null;
+        $this->regEnviarError  = null;
+    }
+
+    public function cerrarModalEnviar(): void
+    {
+        $this->regEnviarId     = null;
+        $this->regEnviarJefeId = null;
+        $this->regEnviarTipo   = null;
+        $this->regEnviarError  = null;
+    }
+
+    public function enviarRegistroAJefe(): void
+    {
+        if (! $this->regEnviarJefeId) {
+            $this->regEnviarError = 'Selecciona un Jefe de Servicio.';
+            return;
+        }
+        if (! $this->regEnviarTipo) {
+            $this->regEnviarError = 'Selecciona el tipo de documento.';
+            return;
+        }
+
+        Registro::where('id', $this->regEnviarId)
+            ->where('estado', 'pendiente')
+            ->update([
+                'estado'         => 'en_firma',
+                'jefe_id'        => $this->regEnviarJefeId,
+                'tipo_documento' => $this->regEnviarTipo,
+            ]);
+
+        $this->cerrarModalEnviar();
     }
 }

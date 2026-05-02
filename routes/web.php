@@ -79,6 +79,8 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.equipo.vale-retiro');
     Route::get('/vale-inventario/{vale}/redescargar', [App\Http\Controllers\InventarioEquipoController::class, 'valeRedescargar'])
         ->name('inventario.vale.redescargar');
+    Route::get('/vale-inventario/{vale}/preview', [App\Http\Controllers\InventarioEquipoController::class, 'valePreview'])
+        ->name('inventario.vale.preview');
 
     Route::get('/bitacora/{bitacora}/descargar', function (\App\Models\BitacoraReporte $bitacora) {
         $service = new \App\Services\BitacoraDocxService();
@@ -135,6 +137,9 @@ Route::prefix('reportes')->name('portal.')->group(function () {
         Route::get('/firmas/{solicitud}/ver',            [PortalReportesController::class, 'showFirmarSolicitud'])->name('firmas.ver');
         Route::post('/firmas/{solicitud}/firmar',        [PortalReportesController::class, 'firmar'])->name('firmar');
         Route::get('/bitacora/{bitacora}/pdf',           [PortalReportesController::class, 'portalBitacoraPdf'])->name('bitacora.pdf');
+        Route::get('/documentos/{registro}/ver',         [PortalReportesController::class, 'showFirmarRegistro'])->name('documentos.ver');
+        Route::post('/documentos/{registro}/firmar',     [PortalReportesController::class, 'firmarRegistro'])->name('documentos.firmar');
+        Route::get('/documentos/{registro}/pdf',         [PortalReportesController::class, 'registroPdf'])->name('documentos.pdf');
     });
 });
 

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\PersonalReportante;
+use App\Models\Registro;
 use App\Models\ReportePizarron;
 use App\Services\GeminiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class PortalReportesController extends Controller
 {
@@ -127,14 +129,25 @@ class PortalReportesController extends Controller
 
         abort_unless($personal->es_jefe_servicio, 403);
 
-        $base = \App\Models\FirmaSolicitud::with(['reporte', 'reporte.bitacora'])
-            ->where('personal_reportante_id', $personal->id)
-            ->latest();
+        $registros = Registro::where('jefe_id', $personal->id)
+            ->whereIn('estado', ['en_firma', 'culminado'])
+            ->with(['formato:id,nombre', 'usuario:id,name'])
+            ->latest()
+            ->get();
 
-        $pendientes = (clone $base)->where('estado', 'pendiente')->get();
-        $firmadas   = (clone $base)->where('estado', 'firmado')->get();
+        $porTipo = [
+            'mantenimiento' => $registros->where('tipo_documento', 'mantenimiento'),
+            'reporte'       => $registros->where('tipo_documento', 'reporte'),
+            'vale'          => $registros->where('tipo_documento', 'vale'),
+            'documento'     => $registros->where('tipo_documento', 'documento'),
+        ];
 
-        return view('portal.firmas', compact('pendientes', 'firmadas', 'personal'));
+        $solicitudesFirma = \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)
+            ->with(['reporte:id,titulo,equipo,ubicacion,descripcion,created_at'])
+            ->latest()
+            ->get();
+
+        return view('portal.firmas', compact('personal', 'porTipo', 'solicitudesFirma'));
     }
 
     public function firmar(Request $request, \App\Models\FirmaSolicitud $solicitud)
@@ -175,6 +188,53 @@ class PortalReportesController extends Controller
         return view('portal.firmar-solicitud', compact('solicitud', 'personal'));
     }
 
+
+    public function showFirmarRegistro(Registro $registro)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($registro->jefe_id === $personal->id, 403);
+
+        $registro->load(['formato', 'usuario']);
+
+        return view('portal.firmar-registro', compact('registro', 'personal'));
+    }
+
+    public function firmarRegistro(Request $request, Registro $registro)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($registro->jefe_id === $personal->id, 403);
+        abort_unless($registro->estado === 'en_firma', 400);
+
+        $request->validate([
+            'firma_posicion' => 'required|string',
+        ], [
+            'firma_posicion.required' => 'Coloca tu firma en el documento antes de confirmar.',
+        ]);
+
+        $registro->update([
+            'estado'          => 'culminado',
+            'firmado_at'      => now(),
+            'firma_jefe_data' => $request->firma_posicion,
+        ]);
+
+        return redirect()->route('portal.firmas')->with('firmado_id', $registro->id);
+    }
+
+    public function registroPdf(Registro $registro)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($registro->jefe_id === $personal->id, 403);
+
+        $formato = $registro->formato;
+        abort_unless($formato && Storage::disk('local')->exists($formato->archivo_path), 404);
+
+        return response(Storage::disk('local')->get($formato->archivo_path))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $formato->archivo_original . '"');
+    }
 
     public function portalBitacoraPdf(\App\Models\BitacoraReporte $bitacora)
     {

@@ -30,6 +30,14 @@ class InventarioEquipoController extends Controller
         return $this->descargarDocx($tmpPath, 'vale-retiro-' . $this->slug($equipo));
     }
 
+    public function valePreview(ValeInventario $vale)
+    {
+        $pdf = Pdf::loadView('pdf.vale-inventario-preview', compact('vale'))
+            ->setPaper('letter', 'portrait');
+
+        return $pdf->stream('vale-preview-' . $vale->id . '.pdf');
+    }
+
     /**
      * Descarga un vale ya registrado (re-generado desde los datos cacheados).
      */

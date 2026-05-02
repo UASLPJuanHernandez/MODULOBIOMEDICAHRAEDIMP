@@ -16,6 +16,9 @@ class Registro extends Model
         'estado',
         'firmado_por_id',
         'firmado_at',
+        'tipo_documento',
+        'jefe_id',
+        'firma_jefe_data',
     ];
 
     protected $casts = [
@@ -46,5 +49,10 @@ class Registro extends Model
     public function firmadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'firmado_por_id');
+    }
+
+    public function jefe(): BelongsTo
+    {
+        return $this->belongsTo(PersonalReportante::class, 'jefe_id');
     }
 }

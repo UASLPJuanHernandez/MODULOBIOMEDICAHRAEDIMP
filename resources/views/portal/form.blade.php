@@ -118,7 +118,10 @@
     {{-- Botón firmas pendientes (solo Jefes de Servicio) --}}
     @if($usuario->es_jefe_servicio)
     @php
-        $firmasPendientes = \App\Models\FirmaSolicitud::where('personal_reportante_id', $usuario->id)
+        $firmasPendientes = \App\Models\Registro::where('jefe_id', $usuario->id)
+            ->where('estado', 'en_firma')
+            ->count()
+            + \App\Models\FirmaSolicitud::where('personal_reportante_id', $usuario->id)
             ->where('estado', 'pendiente')
             ->count();
     @endphp
@@ -131,7 +134,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round"
                       d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z"/>
             </svg>
-            Reportes para firma
+            Documentos
             @if($firmasPendientes > 0)
             <span style="background:#ef4444;color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;min-width:20px;text-align:center;">
                 {{ $firmasPendientes }}

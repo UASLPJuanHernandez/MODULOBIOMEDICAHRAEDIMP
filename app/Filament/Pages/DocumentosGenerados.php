@@ -330,11 +330,20 @@ class DocumentosGenerados extends Page
     public function abrirBitacoraReporte(int $reporteId): mixed
     {
         $reporte  = ReportePizarron::findOrFail($reporteId);
+
+        $personal = $reporte->personal_reportante_id
+            ? \App\Models\PersonalReportante::find($reporte->personal_reportante_id)
+            : null;
+
+        $area = ($personal && $personal->es_jefe_servicio)
+            ? $personal->area_jefe_servicio
+            : null;
+
         $bitacora = \App\Models\BitacoraReporte::firstOrCreate(
             ['reporte_pizarron_id' => $reporteId],
             [
                 'nombre_personal'   => $reporte->reportante_nombre ?? '',
-                'area_departamento' => $reporte->ubicacion ?? '',
+                'area_departamento' => $area,
                 'mensaje_original'  => $reporte->descripcion ?? '',
                 'atiende_nombre'    => $reporte->responsable ?? '',
                 'fecha_reporte'     => now()->toDateString(),

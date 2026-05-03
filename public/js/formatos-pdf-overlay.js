@@ -891,11 +891,28 @@
         enviarFirmaIngeniero: function () {
             _leerValores();
             var firmaCampo = _campos.find(function (c) { return c.tipo === 'firma'; });
-            if (!firmaCampo || !_valores[firmaCampo.id]) {
+            var firmaData  = firmaCampo ? _valores[firmaCampo.id] : null;
+
+            if (!firmaData && window._firmaExistente) {
+                /* _firmaExistente puede ser JSON {imagen,posicion} o data URL directo */
+                var existing = window._firmaExistente;
+                if (existing && existing.indexOf('{') === 0) {
+                    try { existing = JSON.parse(existing).imagen || existing; } catch (e) {}
+                }
+                firmaData = existing;
+            }
+
+            if (!firmaData) {
                 alert('Agrega tu firma antes de enviar el reporte.');
                 return;
             }
-            _lwCall('guardarFirmaYEnviar', _valores[firmaCampo.id]);
+
+            /* Pasar la posición si el campo fue colocado manualmente en el PDF */
+            var firmaPosicion = firmaCampo
+                ? JSON.stringify({ page: firmaCampo.page || 1, x: firmaCampo.x, y: firmaCampo.y, w: firmaCampo.w, h: firmaCampo.h })
+                : null;
+
+            _lwCall('guardarFirmaYEnviar', firmaData, firmaPosicion);
         },
 
         guardarPlantilla: function () {

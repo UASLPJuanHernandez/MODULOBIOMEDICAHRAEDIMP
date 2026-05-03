@@ -28,26 +28,31 @@ El reporte fue escrito por personal no técnico del hospital y puede ser confuso
 Servicio que reporta: "{$servicioReportante}"
 Texto original: "{$textoLibre}"
 
-Tu tarea es extraer y estructurar la información. Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (sin markdown, sin texto adicional, solo el JSON):
+Tu tarea es extraer ÚNICAMENTE la información que esté claramente mencionada en el texto. Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (sin markdown, sin texto adicional, solo el JSON):
 {
-  "equipo": "nombre técnico del equipo médico (ej: ventilador mecánico, monitor de signos vitales, bomba de infusión). Null si no se puede identificar.",
-  "ubicacion": "ubicación precisa: incluye área, cuarto, cama o número de consultorio. Incluye el servicio si aporta contexto.",
-  "descripcion": "descripción técnica concisa de máximo 2 oraciones. Reescribe el texto original: elimina relleno, informalidades y repeticiones. Menciona el síntoma principal y cuándo ocurre si se sabe.",
+  "equipo": "nombre del equipo médico solo si está explícitamente mencionado o se puede identificar con total certeza. Null si hay cualquier duda.",
+  "ubicacion": "ubicación solo si está mencionada en el texto. Null si no se menciona.",
+  "descripcion": "copia exacta del texto original sin ninguna modificación, exactamente como fue recibido.",
   "prioridad": "una de estas cuatro opciones exactas: baja, media, moderada, urgencia"
 }
 
-Criterio de prioridad:
+Reglas estrictas:
+- NUNCA inventes, supongas ni inferras información que no esté escrita explícitamente
+- Si el equipo no se menciona con claridad, pon null. No adivines por el servicio o el contexto
+- Si la ubicación no se menciona, pon null. No uses el servicio como ubicación
+- El campo descripcion SIEMPRE debe ser el texto original exacto, sin ninguna modificación
+
+Criterio de prioridad (único campo donde puedes inferir por contexto):
 - urgencia: equipo de soporte vital (ventilador, desfibrilador, monitor UCI), riesgo inmediato para el paciente
 - moderada: equipo importante para el diagnóstico o tratamiento, sin alternativa inmediata disponible
 - media: equipo diagnóstico o de monitoreo con alternativa disponible
-- baja: equipo administrativo, de confort, o falla menor sin impacto en atención
-
-Reglas para la descripcion:
-- Máximo 2 oraciones claras y directas
-- Usa lenguaje técnico-hospitalario, no coloquial
-- Incluye: qué falla, cómo falla, desde cuándo si se menciona
-- Si el texto es ambiguo, describe lo que se pueda inferir con certeza
+- baja: equipo administrativo, de confort, falla menor, o mensaje muy vago sin información suficiente
 PROMPT;
+
+        if (empty($this->apiKey)) {
+            Log::error('GeminiService: GEMINI_API_KEY no está configurada en .env');
+            return $this->fallback($textoLibre, $servicioReportante);
+        }
 
         try {
             $response = Http::timeout(30)->post("{$this->endpoint}?key={$this->apiKey}", [

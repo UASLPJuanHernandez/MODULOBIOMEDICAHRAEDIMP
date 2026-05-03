@@ -170,10 +170,20 @@ class BitacoraReporteResource extends Resource
                 ->columns(2)
                 ->schema([
                     TextInput::make('nombre_dispositivo')
-                        ->label('Nombre del dispositivo'),
+                        ->label('Descripción del bien / equipo')
+                        ->required()
+                        ->columnSpanFull(),
+
+                    TextInput::make('marca')
+                        ->label('Marca'),
+
+                    TextInput::make('modelo')
+                        ->label('Modelo'),
 
                     TextInput::make('numero_serie')
-                        ->label('Número de serie'),
+                        ->label('Número de serie')
+                        ->required()
+                        ->hint('Si es un consumible, escribir "Consumible"'),
                 ]),
 
             Section::make('Firmas')

@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\EventoCalendario;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Saade\FilamentFullCalendar\Actions\CreateAction;
 use Saade\FilamentFullCalendar\Actions\DeleteAction;
 use Saade\FilamentFullCalendar\Actions\EditAction;
@@ -85,14 +87,26 @@ class CalendarioWidget extends FullCalendarWidget
                     DateTimePicker::make('fecha_inicio')
                         ->label('Inicio')
                         ->required()
-                        ->seconds(false),
+                        ->seconds(false)
+                        ->hidden(fn (Get $get) => $get('todo_el_dia')),
+
+                    DatePicker::make('fecha_inicio_dia')
+                        ->label('Inicio')
+                        ->required()
+                        ->visible(fn (Get $get) => $get('todo_el_dia')),
 
                     DateTimePicker::make('fecha_fin')
                         ->label('Fin')
-                        ->seconds(false),
+                        ->seconds(false)
+                        ->hidden(fn (Get $get) => $get('todo_el_dia')),
+
+                    DatePicker::make('fecha_fin_dia')
+                        ->label('Fin')
+                        ->visible(fn (Get $get) => $get('todo_el_dia')),
 
                     Toggle::make('todo_el_dia')
                         ->label('Todo el día')
+                        ->live()
                         ->columnSpanFull(),
                 ]),
 
@@ -181,19 +195,33 @@ class CalendarioWidget extends FullCalendarWidget
         ];
     }
 
+    private function normalizeEventData(array $data): array
+    {
+        if ($data['todo_el_dia'] ?? false) {
+            $data['fecha_inicio'] = $data['fecha_inicio_dia'] ?? $data['fecha_inicio'];
+            $data['fecha_fin']    = $data['fecha_fin_dia']    ?? $data['fecha_fin'];
+        }
+        unset($data['fecha_inicio_dia'], $data['fecha_fin_dia']);
+        return $data;
+    }
+
     protected function headerActions(): array
     {
         return [
             CreateAction::make()
                 ->label('Nuevo evento')
                 ->mountUsing(function (Form $form, array $arguments) {
+                    $start = $arguments['start'] ?? now();
+                    $end   = $arguments['end']   ?? now()->addHour();
                     $form->fill([
-                        'fecha_inicio' => $arguments['start'] ?? now(),
-                        'fecha_fin'    => $arguments['end']   ?? now()->addHour(),
-                        'color'        => '#3b82f6',
+                        'fecha_inicio'     => $start,
+                        'fecha_inicio_dia' => \Carbon\Carbon::parse($start)->toDateString(),
+                        'fecha_fin'        => $end,
+                        'fecha_fin_dia'    => \Carbon\Carbon::parse($end)->toDateString(),
+                        'color'            => '#3b82f6',
                     ]);
                 })
-                ->using(fn (array $data) => EventoCalendario::create($data)),
+                ->using(fn (array $data) => EventoCalendario::create($this->normalizeEventData($data))),
         ];
     }
 
@@ -201,7 +229,16 @@ class CalendarioWidget extends FullCalendarWidget
     {
         return [
             EditAction::make()
-                ->using(fn (EventoCalendario $record, array $data) => $record->update($data)),
+                ->mutateRecordDataUsing(function (array $data): array {
+                    $data['fecha_inicio_dia'] = $data['fecha_inicio']
+                        ? \Carbon\Carbon::parse($data['fecha_inicio'])->toDateString()
+                        : null;
+                    $data['fecha_fin_dia'] = $data['fecha_fin']
+                        ? \Carbon\Carbon::parse($data['fecha_fin'])->toDateString()
+                        : null;
+                    return $data;
+                })
+                ->using(fn (EventoCalendario $record, array $data) => $record->update($this->normalizeEventData($data))),
 
             DeleteAction::make()
                 ->using(fn (EventoCalendario $record) => $record->delete()),

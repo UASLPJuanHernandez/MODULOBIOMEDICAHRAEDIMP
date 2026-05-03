@@ -100,8 +100,8 @@
                                 <p class="postit-label">Ubicación</p>
                                 <p class="postit-value">{{ $reporte->ubicacion }}</p>
                             @endif
-                            <p class="postit-label">Descripción</p>
-                            <p class="postit-desc">{{ $reporte->descripcion }}</p>
+                            <p class="postit-label">Mensaje recibido</p>
+                            <p class="postit-desc">{{ $reporte->descripcion_original ?? $reporte->descripcion }}</p>
                             @if($reporte->responsable)
                                 <div class="responsable">Responsable: <strong>{{ $reporte->responsable }}</strong></div>
                             @endif
@@ -129,7 +129,14 @@
                     @foreach($evs as $ev)
                         @php $fi = \Carbon\Carbon::parse($ev->fecha_inicio); @endphp
                         <div class="cal-evento" style="border-left-color: {{ $ev->color ?? '#3b82f6' }}">
-                            <div class="cal-evento-fecha">{{ $fi->translatedFormat('D d') }}</div>
+                            <div class="cal-evento-fecha">
+                                {{ $fi->translatedFormat('D d') }}
+                                @if($ev->todo_el_dia)
+                                    · <span style="font-size:9px;opacity:0.8;">Todo el día</span>
+                                @elseif(!$fi->isStartOfDay())
+                                    · {{ $fi->format('H:i') }}
+                                @endif
+                            </div>
                             <div>
                                 <div class="cal-evento-titulo">{{ $ev->titulo }}</div>
                                 @if($ev->ubicacion || $ev->responsable)
@@ -182,6 +189,18 @@
                 .catch(function() {});
         }
 
+        function refreshCalendario() {
+            fetch('/pizarron')
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var doc    = new DOMParser().parseFromString(html, 'text/html');
+                    var newCal = doc.getElementById('seccion-calendario');
+                    var curCal = document.getElementById('seccion-calendario');
+                    if (newCal && curCal) curCal.innerHTML = newCal.innerHTML;
+                })
+                .catch(function() {});
+        }
+
         // Tick cada segundo
         setInterval(function() {
             if (!enCalendario) {
@@ -193,16 +212,41 @@
             }
         }, 1000);
 
-        // Detectar reportes nuevos cada 5 segundos
+        // Detectar reportes nuevos o modificados cada 5 segundos
+        var lastUpdated        = null;
+        var lastEventosUpdated = null;
+
         setInterval(function() {
             fetch('/pizarron/count')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (data.count > lastCount) {
+                    if (data.count !== lastCount) {
                         lastCount = data.count;
                         mostrarPizarron();
-                    } else {
-                        lastCount = data.count;
+                    }
+                })
+                .catch(function() {});
+
+            fetch('/pizarron/updated')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (lastUpdated === null) {
+                        lastUpdated = data.updated_at;
+                    } else if (data.updated_at !== lastUpdated) {
+                        lastUpdated = data.updated_at;
+                        refreshPizarron();
+                    }
+                })
+                .catch(function() {});
+
+            fetch('/pizarron/eventos-updated')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (lastEventosUpdated === null) {
+                        lastEventosUpdated = data.updated_at;
+                    } else if (data.updated_at !== lastEventosUpdated) {
+                        lastEventosUpdated = data.updated_at;
+                        refreshCalendario();
                     }
                 })
                 .catch(function() {});

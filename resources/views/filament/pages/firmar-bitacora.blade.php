@@ -79,8 +79,9 @@
 
 <script>
 document.addEventListener('livewire:initialized', function () {
-    window._fmtIngenieros = @json($ingenieros);
-    window._fmtJefas      = [];
+    window._fmtIngenieros  = @json($ingenieros);
+    window._fmtJefas       = [];
+    window._firmaExistente = @js($record->firma_ingeniero);
 
     setTimeout(function () {
         document.dispatchEvent(new CustomEvent('fmt:init-direct', {

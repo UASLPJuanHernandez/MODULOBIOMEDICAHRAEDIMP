@@ -23,18 +23,24 @@ class ReportePizarronObserver
             return;
         }
 
-        // Numero de identificación del personal si existe
-        $numeroId = null;
-        if ($reporte->personal_reportante_id) {
-            $personal = PersonalReportante::find($reporte->personal_reportante_id);
-            $numeroId = $personal?->numero_empleado;
-        }
+        $personal = $reporte->personal_reportante_id
+            ? PersonalReportante::find($reporte->personal_reportante_id)
+            : null;
+
+        $numeroId = $personal?->numero_empleado;
+
+        // Solo pre-seleccionar área si el reportante es Jefe de Servicio
+        // (su area_jefe_servicio coincide con las opciones del Select).
+        // Los demás usan campo libre que no coincide con el catálogo.
+        $area = ($personal && $personal->es_jefe_servicio)
+            ? $personal->area_jefe_servicio
+            : null;
 
         BitacoraReporte::create([
             'reporte_pizarron_id'  => $reporte->id,
             'nombre_personal'      => $reporte->reportante_nombre ?? '—',
             'numero_identificacion'=> $numeroId,
-            'area_departamento'    => $reporte->reportante_servicio ?? '—',
+            'area_departamento'    => $area,
             'fecha_reporte'        => $reporte->created_at->toDateString(),
             'hora_reporte'         => $reporte->created_at->format('H:i:s'),
             'mensaje_original'     => $reporte->descripcion_original ?? $reporte->descripcion,

@@ -20,6 +20,8 @@ class BitacoraReporte extends Model
         'acciones',
         'resultado',
         'nombre_dispositivo',
+        'marca',
+        'modelo',
         'numero_serie',
         'atiende_nombre',
         'recibe_nombre',

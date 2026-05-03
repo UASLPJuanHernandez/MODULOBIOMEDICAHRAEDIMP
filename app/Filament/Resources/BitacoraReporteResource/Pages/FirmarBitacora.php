@@ -10,6 +10,7 @@ use App\Models\PersonalReportante;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
+use Illuminate\Support\Str;
 
 class FirmarBitacora extends Page
 {
@@ -39,16 +40,23 @@ class FirmarBitacora extends Page
             ->toArray();
     }
 
-    public function guardarFirmaYEnviar(string $firmaData): void
+    public function guardarFirmaYEnviar(string $firmaData, ?string $firmaPosicion = null): void
     {
-        $this->record->update(['firma_ingeniero' => $firmaData]);
+        // Guardar posición + imagen juntos para que BitacoraOverlayService
+        // coloque la firma exactamente donde el ingeniero la posicionó
+        $savedData = ($firmaPosicion)
+            ? json_encode(['posicion' => json_decode($firmaPosicion, true), 'imagen' => $firmaData])
+            : $firmaData;
 
-        $area = $this->record->area_departamento;
+        $this->record->update(['firma_ingeniero' => $savedData]);
+
+        $area     = $this->record->area_departamento;
+        $areaNorm = strtolower(trim(Str::ascii($area)));
 
         $jefe = PersonalReportante::where('es_jefe_servicio', true)
             ->where('estado', 'aprobado')
-            ->where('area_jefe_servicio', $area)
-            ->first();
+            ->get()
+            ->first(fn ($j) => strtolower(trim(Str::ascii($j->area_jefe_servicio ?? ''))) === $areaNorm);
 
         if ($jefe && $this->record->reporte_pizarron_id) {
             FirmaSolicitud::firstOrCreate(

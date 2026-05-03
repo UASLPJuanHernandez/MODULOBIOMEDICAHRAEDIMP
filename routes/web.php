@@ -44,6 +44,20 @@ Route::get('/pizarron/count', function () {
     return response()->json(['count' => \App\Models\ReportePizarron::activos()->count()]);
 })->middleware('auth');
 
+// API: timestamp del último cambio para detectar ediciones
+Route::get('/pizarron/updated', function () {
+    $ts = \App\Models\ReportePizarron::activos()->max('updated_at');
+    return response()->json(['updated_at' => $ts]);
+})->middleware('auth');
+
+// API: timestamp del último evento para detectar nuevos o ediciones
+Route::get('/pizarron/eventos-updated', function () {
+    $ts = \App\Models\EventoCalendario::whereDate('fecha_inicio', '>=', now()->startOfMonth())
+        ->whereDate('fecha_inicio', '<=', now()->endOfMonth()->addMonth())
+        ->max('updated_at');
+    return response()->json(['updated_at' => $ts]);
+})->middleware('auth');
+
 // API: eventos del calendario para la vista standalone
 Route::get('/pizarron/eventos', function () {
     $start = request('start');
@@ -83,35 +97,16 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.vale.preview');
 
     Route::get('/bitacora/{bitacora}/descargar', function (\App\Models\BitacoraReporte $bitacora) {
-        $service = new \App\Services\BitacoraDocxService();
+        $service = new \App\Services\BitacoraOverlayService();
         $path    = $service->generar($bitacora);
-        return response()->download($path, 'Bitacora_' . $bitacora->id . '.docx')
-            ->deleteFileAfterSend(true);
+        return response()->download($path, 'SolicitudServicio_' . $bitacora->id . '.pdf', [
+            'Content-Type' => 'application/pdf',
+        ])->deleteFileAfterSend(true);
     })->name('bitacora.descargar');
 
     Route::get('/bitacora/{bitacora}/preview', function (\App\Models\BitacoraReporte $bitacora) {
-        $meses = [
-            1=>'enero',2=>'febrero',3=>'marzo',4=>'abril',5=>'mayo',6=>'junio',
-            7=>'julio',8=>'agosto',9=>'septiembre',10=>'octubre',11=>'noviembre',12=>'diciembre',
-        ];
-        $mesEspanol = $meses[\Carbon\Carbon::parse($bitacora->fecha_reporte)->month];
-
-        $textoResultado = match($bitacora->resultado) {
-            'parcial'          => 'parcial',
-            'no_satisfactoria' => 'no satisfactoria',
-            default            => 'satisfactoria',
-        };
-        $labelResultado = match($bitacora->resultado) {
-            'parcial'          => 'Parcial',
-            'no_satisfactoria' => 'No satisfactoria',
-            default            => 'Satisfactoria',
-        };
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.bitacora', compact(
-            'bitacora', 'mesEspanol', 'textoResultado', 'labelResultado'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('Bitacora_' . $bitacora->id . '.pdf');
+        $pdf = (new \App\Services\BitacoraOverlayService())->stream($bitacora);
+        return response($pdf, 200, ['Content-Type' => 'application/pdf']);
     })->name('bitacora.preview');
 });
 
@@ -134,6 +129,8 @@ Route::prefix('reportes')->name('portal.')->group(function () {
         Route::get('/enviar',  [PortalReportesController::class, 'showForm'])->name('reportes.form');
         Route::post('/enviar', [PortalReportesController::class, 'enviar'])->name('reportes.enviar');
         Route::get('/firmas',                            [PortalReportesController::class, 'showFirmas'])->name('firmas');
+        Route::get('/firmas/updated',                    [PortalReportesController::class, 'firmasUpdated'])->name('firmas.updated');
+        Route::get('/firmas/pendientes',                 [PortalReportesController::class, 'pendientesCount'])->name('firmas.pendientes');
         Route::get('/firmas/{solicitud}/ver',            [PortalReportesController::class, 'showFirmarSolicitud'])->name('firmas.ver');
         Route::post('/firmas/{solicitud}/firmar',        [PortalReportesController::class, 'firmar'])->name('firmar');
         Route::get('/bitacora/{bitacora}/pdf',           [PortalReportesController::class, 'portalBitacoraPdf'])->name('bitacora.pdf');

@@ -135,13 +135,30 @@
                       d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z"/>
             </svg>
             Documentos
-            @if($firmasPendientes > 0)
-            <span style="background:#ef4444;color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;min-width:20px;text-align:center;">
+            <span id="badge-pendientes" style="background:#ef4444;color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;min-width:20px;text-align:center;{{ $firmasPendientes > 0 ? '' : 'display:none' }}">
                 {{ $firmasPendientes }}
             </span>
-            @endif
         </a>
     </div>
+    <script>
+    (function () {
+        var badge = document.getElementById('badge-pendientes');
+        setInterval(function () {
+            fetch('{{ route('portal.firmas.pendientes') }}', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    if (data.total > 0) {
+                        badge.textContent  = data.total;
+                        badge.style.display = '';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(function () {});
+        }, 5000);
+    })();
+    </script>
     @endif
 
     <div class="card">

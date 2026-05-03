@@ -83,13 +83,26 @@
             padding: 4px;
             display: none;
             user-select: none;
+            width: 148px;
+            height: 63px;
         }
         #firma-drag.dragging { cursor: grabbing; opacity: .85; }
-        #firma-drag img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+        #firma-drag img { display: block; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
         #firma-drag .drag-hint {
             position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
             background: #1d4ed8; color: white; font-size: 10px; font-weight: 700;
             padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+        }
+        #resize-handle {
+            position: absolute; bottom: 0; right: 0;
+            width: 14px; height: 14px;
+            background: #1d4ed8; border-radius: 2px 0 4px 0;
+            cursor: nwse-resize;
+        }
+        #resize-handle::after {
+            content: ''; position: absolute; right: 2px; bottom: 2px;
+            width: 6px; height: 6px;
+            border-right: 2px solid white; border-bottom: 2px solid white;
         }
 
         /* ── Sidebar ── */
@@ -178,8 +191,9 @@
         </div>
         {{-- Firma arrastrable (se mueve dentro de pdf-pages) --}}
         <div id="firma-drag">
-            <div class="drag-hint">Arrastra para mover</div>
-            <img src="{{ $firmaDataUrl }}" alt="Tu firma" style="width:140px;height:55px;">
+            <div class="drag-hint">Arrastra · Esquina para redimensionar</div>
+            <img src="{{ $firmaDataUrl }}" alt="Tu firma">
+            <div id="resize-handle"></div>
         </div>
     </div>
 
@@ -314,8 +328,10 @@
             return Promise.all(renders);
         })
         .then(function () {
-            /* Después de renderizar: mostrar instrucción y habilitar clics */
+            /* Después de renderizar: mover firma-drag dentro de pdfPages para que
+               haga scroll junto con el contenido y la posición sea coherente */
             if (FIRMA_SRC && firmaDrag) {
+                pdfPages.appendChild(firmaDrag);
                 placeHint.style.display = 'block';
                 pdfArea.addEventListener('click', onPdfClick);
             }
@@ -415,9 +431,11 @@
         var pgRect = bestPg.getBoundingClientRect();
         var pagesRect = pdfPages.getBoundingClientRect();
 
-        /* Posición del clic relativa a pdfPages */
+        /* Posición del clic relativa a pdfPages (firma-drag es hijo de pdfPages,
+           así que su top/left es relativo a ese contenedor; pagesRect ya refleja
+           el scroll, no hay que sumarlo de nuevo) */
         var leftInPages = (clickX - pagesRect.left) - (firmaDrag.offsetWidth  / 2);
-        var topInPages  = (clickY - pagesRect.top  + pdfArea.scrollTop) - (firmaDrag.offsetHeight / 2);
+        var topInPages  = (clickY - pagesRect.top)  - (firmaDrag.offsetHeight / 2);
 
         /* Mostrar la firma ahí */
         firmaDrag.style.display = 'block';
@@ -441,11 +459,11 @@
 
         var pgRect  = pg.getBoundingClientRect();
         var fdRect  = firmaDrag.getBoundingClientRect();
-        var scrollT = pdfArea.scrollTop;
 
-        /* Coordenadas relativas a la página en % */
+        /* Coordenadas relativas a la página en % (ambos rects son viewport coords
+           que se desplazan igual al hacer scroll, la diferencia es invariante) */
         var xPct = ((fdRect.left - pgRect.left) / pgRect.width)  * 100;
-        var yPct = ((fdRect.top  - pgRect.top  + scrollT) / pgRect.height) * 100;
+        var yPct = ((fdRect.top  - pgRect.top)  / pgRect.height) * 100;
         var wPct = (firmaDrag.offsetWidth  / pgRect.width)  * 100;
         var hPct = (firmaDrag.offsetHeight / pgRect.height) * 100;
 
@@ -469,33 +487,66 @@
         }
     }
 
-    /* ── Drag de la firma arrastrable ── */
+    /* ── Drag + Resize de la firma arrastrable ── */
+    var isResizing = false;
+    var resStartX, resStartY, resStartW, resStartH;
+    var resizeHandle = document.getElementById('resize-handle');
+
     if (firmaDrag) {
         firmaDrag.addEventListener('mousedown', function (e) {
-            e.stopPropagation();  /* no propagar al pdf-area */
-            isDragging   = true;
-            dragStartX   = e.clientX;
-            dragStartY   = e.clientY;
+            if (e.target === resizeHandle) return; /* el handle lo gestiona su propio listener */
+            e.stopPropagation();
+            isDragging    = true;
+            dragStartX    = e.clientX;
+            dragStartY    = e.clientY;
             dragStartLeft = parseFloat(firmaDrag.style.left) || 0;
             dragStartTop  = parseFloat(firmaDrag.style.top)  || 0;
             firmaDrag.classList.add('dragging');
             e.preventDefault();
         });
 
-        /* Touch support */
         firmaDrag.addEventListener('touchstart', function (e) {
+            if (e.target === resizeHandle) return;
             e.stopPropagation();
             var t = e.touches[0];
-            isDragging   = true;
-            dragStartX   = t.clientX;
-            dragStartY   = t.clientY;
+            isDragging    = true;
+            dragStartX    = t.clientX;
+            dragStartY    = t.clientY;
             dragStartLeft = parseFloat(firmaDrag.style.left) || 0;
             dragStartTop  = parseFloat(firmaDrag.style.top)  || 0;
             firmaDrag.classList.add('dragging');
         }, { passive: true });
     }
 
+    if (resizeHandle) {
+        resizeHandle.addEventListener('mousedown', function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            isResizing = true;
+            resStartX  = e.clientX;
+            resStartY  = e.clientY;
+            resStartW  = firmaDrag.offsetWidth;
+            resStartH  = firmaDrag.offsetHeight;
+        });
+
+        resizeHandle.addEventListener('touchstart', function (e) {
+            e.stopPropagation();
+            var t = e.touches[0];
+            isResizing = true;
+            resStartX  = t.clientX;
+            resStartY  = t.clientY;
+            resStartW  = firmaDrag.offsetWidth;
+            resStartH  = firmaDrag.offsetHeight;
+        }, { passive: false });
+    }
+
     document.addEventListener('mousemove', function (e) {
+        if (isResizing) {
+            firmaDrag.style.width  = Math.max(60, resStartW + e.clientX - resStartX) + 'px';
+            firmaDrag.style.height = Math.max(24, resStartH + e.clientY - resStartY) + 'px';
+            if (firmaColocada) actualizarPosicion();
+            return;
+        }
         if (!isDragging) return;
         var dx = e.clientX - dragStartX;
         var dy = e.clientY - dragStartY;
@@ -505,8 +556,14 @@
     });
 
     document.addEventListener('touchmove', function (e) {
+        var t = e.touches[0];
+        if (isResizing) {
+            firmaDrag.style.width  = Math.max(60, resStartW + t.clientX - resStartX) + 'px';
+            firmaDrag.style.height = Math.max(24, resStartH + t.clientY - resStartY) + 'px';
+            if (firmaColocada) actualizarPosicion();
+            return;
+        }
         if (!isDragging) return;
-        var t  = e.touches[0];
         var dx = t.clientX - dragStartX;
         var dy = t.clientY - dragStartY;
         firmaDrag.style.left = (dragStartLeft + dx) + 'px';
@@ -514,8 +571,8 @@
         actualizarPosicion();
     }, { passive: true });
 
-    document.addEventListener('mouseup',  function () { isDragging = false; firmaDrag && firmaDrag.classList.remove('dragging'); });
-    document.addEventListener('touchend', function () { isDragging = false; firmaDrag && firmaDrag.classList.remove('dragging'); });
+    document.addEventListener('mouseup',  function () { isDragging = false; isResizing = false; firmaDrag && firmaDrag.classList.remove('dragging'); });
+    document.addEventListener('touchend', function () { isDragging = false; isResizing = false; firmaDrag && firmaDrag.classList.remove('dragging'); });
 
     function actualizarPosicion() {
         if (!firmaColocada) return;

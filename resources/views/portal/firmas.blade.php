@@ -38,6 +38,8 @@
         .btn-firmar { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1d4ed8; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; text-decoration: none; }
         .btn-firmar:hover { background: #dbeafe; }
         .firmado-info { font-size: 12px; color: #059669; font-weight: 600; }
+        .btn-pdf { display: inline-flex; align-items: center; gap: 4px; background: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 7px; text-decoration: none; }
+        .btn-pdf:hover { background: #dcfce7; }
         .alert-ok { background: #d1fae5; color: #065f46; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
         .tipo-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #6b7280; margin-right: 6px; }
     </style>
@@ -70,6 +72,7 @@
             ];
         @endphp
 
+        <div id="firmas-content">
         {{-- Tabs --}}
         <div class="tabs">
             @foreach($tipos as $key => $label)
@@ -79,7 +82,7 @@
                     $cnt += $solicitudesFirma->where('estado','pendiente')->count();
                 }
             @endphp
-            <button class="tab-btn {{ $loop->first ? 'active' : '' }}" onclick="cambiarTab('{{ $key }}', this)">
+            <button class="tab-btn {{ $loop->first ? 'active' : '' }}" data-tab="{{ $key }}" onclick="cambiarTab('{{ $key }}', this)">
                 {{ $label }}
                 @if($cnt > 0)
                 <span class="badge-count">{{ $cnt }}</span>
@@ -188,13 +191,22 @@
                     </div>
                     <div class="card-footer">
                         <span class="firmado-info">✓ Firmado</span>
-                        <a href="{{ route('portal.documentos.pdf', $reg) }}" target="_blank"
-                           style="font-size:12px;color:#6b7280;text-decoration:underline;">Ver PDF</a>
+                        <div style="display:flex;gap:8px;">
+                            <a href="{{ route('portal.documentos.pdf', $reg) }}" target="_blank" class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                Ver
+                            </a>
+                            <a href="{{ route('portal.documentos.pdf', $reg) }}" download class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Descargar
+                            </a>
+                        </div>
                     </div>
                 </div>
                 @endforeach
 
                 @foreach($solFirmadas as $sol)
+                @php $bitacoraUrl = $sol->reporte?->bitacora ? route('portal.bitacora.pdf', $sol->reporte->bitacora) : null; @endphp
                 <div class="card">
                     <div class="card-header">
                         <div style="min-width:0;flex:1;">
@@ -206,6 +218,18 @@
                     </div>
                     <div class="card-footer">
                         <span class="firmado-info">✓ Firmado</span>
+                        @if($bitacoraUrl)
+                        <div style="display:flex;gap:8px;">
+                            <a href="{{ $bitacoraUrl }}" target="_blank" class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                Ver
+                            </a>
+                            <a href="{{ $bitacoraUrl }}" download class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Descargar
+                            </a>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -215,6 +239,7 @@
         </div>
         @endforeach
 
+        </div>{{-- /firmas-content --}}
     </div>
 
     <script>
@@ -224,11 +249,48 @@
         document.getElementById('tab-' + key).classList.add('active');
         btn.classList.add('active');
     }
-    @if(session('firmado_id'))
-    document.addEventListener('DOMContentLoaded', function () {
-        // No auto-switch needed; user sees the success banner
-    });
-    @endif
+
+    @php
+        $totalInicial = collect($porTipo)->flatten()->where('estado','en_firma')->count()
+            + $solicitudesFirma->where('estado','pendiente')->count();
+    @endphp
+    (function () {
+        var lastTotal = {{ $totalInicial }};
+
+        function refrescarFirmas() {
+            var activeBtn = document.querySelector('#firmas-content .tab-btn.active');
+            var activeTab = activeBtn ? activeBtn.dataset.tab : null;
+
+            fetch('{{ route('portal.firmas') }}', { credentials: 'same-origin' })
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    var doc        = new DOMParser().parseFromString(html, 'text/html');
+                    var newContent = doc.getElementById('firmas-content');
+                    var curContent = document.getElementById('firmas-content');
+                    if (newContent && curContent) {
+                        curContent.innerHTML = newContent.innerHTML;
+                        if (activeTab) {
+                            var btn = curContent.querySelector('[data-tab="' + activeTab + '"]');
+                            if (btn) cambiarTab(activeTab, btn);
+                        }
+                    }
+                })
+                .catch(function () {});
+        }
+
+        setInterval(function () {
+            fetch('{{ route('portal.firmas.pendientes') }}', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    if (data.total !== lastTotal) {
+                        lastTotal = data.total;
+                        refrescarFirmas();
+                    }
+                })
+                .catch(function () {});
+        }, 5000);
+    })();
     </script>
 </body>
 </html>

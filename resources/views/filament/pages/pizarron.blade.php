@@ -161,7 +161,7 @@
                             @endif
 
                             <div style="margin-bottom: 14px;">
-                                <span style="font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.5px;">Descripción</span>
+                                <span style="font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.5px;">Mensaje recibido</span>
                                 <p style="font-size: 11px; color: #333; margin: 4px 0 0 0; line-height: 1.5;">{{ $reporte->descripcion_original ?? $reporte->descripcion }}</p>
                             </div>
 

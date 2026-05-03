@@ -143,7 +143,10 @@ class PortalReportesController extends Controller
         ];
 
         $solicitudesFirma = \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)
-            ->with(['reporte:id,titulo,equipo,ubicacion,descripcion,created_at'])
+            ->with([
+                'reporte:id,titulo,equipo,ubicacion,descripcion,created_at',
+                'reporte.bitacora:id,reporte_pizarron_id',
+            ])
             ->latest()
             ->get();
 
@@ -157,17 +160,29 @@ class PortalReportesController extends Controller
         abort_unless($solicitud->personal_reportante_id === $personal->id, 403);
         abort_unless($solicitud->estado === 'pendiente', 400);
 
-        // Para la vista de firma por jefe: usa la firma registrada directamente
+        $request->validate([
+            'firma_posicion' => 'required|string',
+        ], [
+            'firma_posicion.required' => 'Coloca tu firma en el documento antes de confirmar.',
+        ]);
+
         $firmaData = $request->input('firma_data') ?: $personal->firma;
 
         if (! $firmaData) {
             return back()->withErrors(['firma' => 'No tienes firma registrada.']);
         }
 
+        // Guardar posición + imagen juntos para que BitacoraOverlayService
+        // pueda colocar la firma exactamente donde el jefe la posicionó
+        $savedData = json_encode([
+            'posicion' => json_decode($request->firma_posicion, true),
+            'imagen'   => $firmaData,
+        ]);
+
         $solicitud->update([
             'estado'     => 'firmado',
             'firmado_at' => now(),
-            'firma_data' => $firmaData,
+            'firma_data' => $savedData,
         ]);
 
         // Marcar el reporte como concretado ahora que el jefe firmó
@@ -177,6 +192,34 @@ class PortalReportesController extends Controller
         }
 
         return back()->with('firmado_id', $solicitud->id);
+    }
+
+    public function pendientesCount()
+    {
+        $personal = Auth::guard('personal')->user();
+        abort_unless($personal->es_jefe_servicio, 403);
+
+        $total = Registro::where('jefe_id', $personal->id)->where('estado', 'en_firma')->count()
+            + \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)->where('estado', 'pendiente')->count();
+
+        return response()->json(['total' => $total]);
+    }
+
+    public function firmasUpdated()
+    {
+        $personal = Auth::guard('personal')->user();
+        abort_unless($personal->es_jefe_servicio, 403);
+
+        $tsReg = Registro::where('jefe_id', $personal->id)
+            ->whereIn('estado', ['en_firma', 'culminado'])
+            ->max('updated_at');
+
+        $tsSol = \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)
+            ->max('updated_at');
+
+        $ts = max($tsReg, $tsSol);
+
+        return response()->json(['updated_at' => $ts]);
     }
 
     public function showFirmarSolicitud(\App\Models\FirmaSolicitud $solicitud)
@@ -231,9 +274,10 @@ class PortalReportesController extends Controller
         $formato = $registro->formato;
         abort_unless($formato && Storage::disk('local')->exists($formato->archivo_path), 404);
 
-        return response(Storage::disk('local')->get($formato->archivo_path))
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $formato->archivo_original . '"');
+        $registro->load('formato');
+        $pdf = (new \App\Services\RegistroOverlayService())->stream($registro);
+
+        return response($pdf, 200, ['Content-Type' => 'application/pdf']);
     }
 
     public function portalBitacoraPdf(\App\Models\BitacoraReporte $bitacora)
@@ -248,29 +292,8 @@ class PortalReportesController extends Controller
 
         abort_unless($esReportante || $esJefe, 403);
 
-        $meses = [
-            1=>'enero',2=>'febrero',3=>'marzo',4=>'abril',5=>'mayo',6=>'junio',
-            7=>'julio',8=>'agosto',9=>'septiembre',10=>'octubre',11=>'noviembre',12=>'diciembre',
-        ];
-        $mesEspanol     = $meses[\Carbon\Carbon::parse($bitacora->fecha_reporte)->month];
-        $textoResultado = match($bitacora->resultado) {
-            'parcial'          => 'parcial',
-            'no_satisfactoria' => 'no satisfactoria',
-            default            => 'satisfactoria',
-        };
-        $labelResultado = match($bitacora->resultado) {
-            'parcial'          => 'Parcial',
-            'no_satisfactoria' => 'No satisfactoria',
-            default            => 'Satisfactoria',
-        };
-        $firmaSolicitud = \App\Models\FirmaSolicitud::where('reporte_pizarron_id', $bitacora->reporte_pizarron_id)
-            ->where('estado', 'firmado')->latest()->first();
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.bitacora', compact(
-            'bitacora', 'mesEspanol', 'textoResultado', 'labelResultado', 'firmaSolicitud'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('Bitacora_' . $bitacora->id . '.pdf');
+        $pdf = (new \App\Services\BitacoraOverlayService())->stream($bitacora);
+        return response($pdf, 200, ['Content-Type' => 'application/pdf']);
     }
 
     public function enviar(Request $request, GeminiService $gemini)

@@ -21,6 +21,8 @@ class OrdenServicioResource extends Resource
 {
     protected static ?string $model = OrdenServicio::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
 
     protected static ?string $navigationLabel = 'Órdenes de Servicio';

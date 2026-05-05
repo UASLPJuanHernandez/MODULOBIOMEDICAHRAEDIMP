@@ -1,5 +1,8 @@
 <x-filament-panels::page>
 
+    <div x-data="{ modalReporte: false }"
+         @reporte-creado.window="modalReporte = false">
+
     {{-- Pizarron: blanco con solo el margen --}}
     <div style="
         min-height: 78vh;
@@ -9,13 +12,31 @@
         border: 2px solid #e5e7eb;
     ">
 
-        {{-- Titulo discreto --}}
-        <div style="text-align: center; margin-bottom: 32px;">
-            <p style="color: #9ca3af; font-size: 13px; font-family: sans-serif;">
+        {{-- Cabecera: titulo + botón agregar --}}
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 32px;">
+            <p style="color: #9ca3af; font-size: 13px; font-family: sans-serif; margin:0;">
                 Reportes en tiempo real. Área de Ingeniería Biomédica del HRAE
             </p>
+            <button
+                @click="modalReporte = true"
+                style="
+                    display:inline-flex; align-items:center; gap:6px;
+                    background:#2563eb; color:white;
+                    border:none; border-radius:8px;
+                    padding:8px 16px; font-size:13px; font-weight:600;
+                    cursor:pointer; transition:background 0.15s;
+                "
+                onmouseover="this.style.background='#1d4ed8'"
+                onmouseout="this.style.background='#2563eb'"
+            >
+                <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                Agregar reporte
+            </button>
         </div>
 
+        <div wire:poll.3s>
         @php $reportes = $this->getReportes(); @endphp
 
         @if($reportes->isEmpty())
@@ -264,14 +285,183 @@
 
             </div>
         @endif
+        </div>{{-- cierra wire:poll --}}
 
     </div>
 
+    {{-- ── MODAL: Agregar reporte manual ── --}}
+    <div
+        x-show="modalReporte"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:50; display:flex; align-items:center; justify-content:center; padding:16px;"
+        @click.self="modalReporte = false"
+    >
+        <div
+            x-show="modalReporte"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            style="background:white; border-radius:14px; padding:28px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);"
+            @click.stop
+        >
+            {{-- Cabecera modal --}}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
+                <h2 style="font-size:17px; font-weight:700; color:#111827; margin:0;">Nuevo reporte manual</h2>
+                <button @click="modalReporte = false" style="background:none; border:none; cursor:pointer; color:#9ca3af; font-size:22px; line-height:1;">&times;</button>
+            </div>
 
-    @script
-    <script>
-        setInterval(() => $wire.$refresh(), 8000);
-    </script>
-    @endscript
+            {{-- Errores de validación --}}
+            @if($errors->any())
+                <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; margin-bottom:16px;">
+                    @foreach($errors->all() as $error)
+                        <p style="font-size:12px; color:#dc2626; margin:2px 0;">{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Formulario --}}
+            <div style="display:flex; flex-direction:column; gap:14px;">
+
+                {{-- Título --}}
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">
+                        Título / descripción corta <span style="color:#ef4444;">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        wire:model="nr_titulo"
+                        placeholder="Ej: Falla en ventilador UCI"
+                        style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#2563eb'"
+                        onblur="this.style.borderColor='#d1d5db'"
+                    >
+                </div>
+
+                {{-- Descripción --}}
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">
+                        Mensaje / descripción completa <span style="color:#ef4444;">*</span>
+                    </label>
+                    <textarea
+                        wire:model="nr_descripcion"
+                        placeholder="Describe el problema con detalle..."
+                        rows="3"
+                        style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; resize:vertical; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#2563eb'"
+                        onblur="this.style.borderColor='#d1d5db'"
+                    ></textarea>
+                </div>
+
+                {{-- Equipo + Ubicación --}}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Equipo</label>
+                        <input
+                            type="text"
+                            wire:model="nr_equipo"
+                            placeholder="Ej: Ventilador Drager"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#2563eb'"
+                            onblur="this.style.borderColor='#d1d5db'"
+                        >
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Ubicación / Área</label>
+                        <input
+                            type="text"
+                            wire:model="nr_ubicacion"
+                            placeholder="Ej: UCI Piso 2"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#2563eb'"
+                            onblur="this.style.borderColor='#d1d5db'"
+                        >
+                    </div>
+                </div>
+
+                {{-- Prioridad + Responsable --}}
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">
+                            Prioridad <span style="color:#ef4444;">*</span>
+                        </label>
+                        <select
+                            wire:model="nr_prioridad"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; background:white; outline:none; box-sizing:border-box;"
+                        >
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="moderada">Moderada</option>
+                            <option value="urgencia">Urgencia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Responsable</label>
+                        <select
+                            wire:model="nr_responsable"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; background:white; outline:none; box-sizing:border-box;"
+                        >
+                            <option value="">— Sin asignar —</option>
+                            @foreach(\App\Filament\Pages\Dashboard::getResponsables() as $ing)
+                                <option value="{{ $ing }}">{{ $ing }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Quién reporta --}}
+                <div style="border-top:1px solid #f3f4f6; padding-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Nombre de quien reporta</label>
+                        <input
+                            type="text"
+                            wire:model="nr_reportante_nombre"
+                            placeholder="Nombre completo"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#2563eb'"
+                            onblur="this.style.borderColor='#d1d5db'"
+                        >
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:5px;">Servicio / Área</label>
+                        <input
+                            type="text"
+                            wire:model="nr_reportante_servicio"
+                            placeholder="Ej: Urgencias"
+                            style="width:100%; padding:8px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;"
+                            onfocus="this.style.borderColor='#2563eb'"
+                            onblur="this.style.borderColor='#d1d5db'"
+                        >
+                    </div>
+                </div>
+
+                {{-- Botones --}}
+                <div style="display:flex; justify-content:flex-end; gap:10px; padding-top:6px;">
+                    <button
+                        type="button"
+                        @click="modalReporte = false"
+                        style="padding:9px 20px; border:1.5px solid #d1d5db; border-radius:8px; background:white; font-size:13px; font-weight:600; color:#374151; cursor:pointer;"
+                    >Cancelar</button>
+                    <button
+                        type="button"
+                        wire:click="crearReporte"
+                        style="padding:9px 20px; background:#2563eb; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; cursor:pointer;"
+                        onmouseover="this.style.background='#1d4ed8'"
+                        onmouseout="this.style.background='#2563eb'"
+                    >
+                        <span wire:loading.remove wire:target="crearReporte">Guardar reporte</span>
+                        <span wire:loading wire:target="crearReporte">Guardando...</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    </div>{{-- cierra x-data --}}
 
 </x-filament-panels::page>

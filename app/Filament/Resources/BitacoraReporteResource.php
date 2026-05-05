@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BitacoraReporteResource\Pages;
 use App\Models\BitacoraReporte;
+use App\Models\PersonalReportante;
 use App\Services\BitacoraDocxService;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -102,7 +104,17 @@ class BitacoraReporteResource extends Resource
                             'Urgencias'                => 'Urgencias',
                         ])
                         ->searchable()
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function (?string $state, Set $set) {
+                            if (! $state) return;
+                            $jefe = PersonalReportante::where('es_jefe_servicio', true)
+                                ->where('area_jefe_servicio', $state)
+                                ->value('nombre');
+                            if ($jefe) {
+                                $set('recibe_nombre', $jefe);
+                            }
+                        }),
                 ]),
 
             Section::make('Fecha y hora')
@@ -123,7 +135,8 @@ class BitacoraReporteResource extends Resource
                     Textarea::make('mensaje_original')
                         ->label('Mensaje original del usuario')
                         ->rows(4)
-                        ->required(),
+                        ->disabled()
+                        ->dehydrated(),
                 ]),
 
             Section::make('Acciones realizadas')

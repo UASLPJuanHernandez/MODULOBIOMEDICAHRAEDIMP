@@ -3,15 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\IngenierResource\Pages;
+use App\Filament\Resources\IngenierResource\RelationManagers;
 use App\Models\Ingeniero;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
 use App\Filament\Forms\Components\FirmaPad;
+use App\Filament\Forms\Components\FotoUpload;
 
 class IngenierResource extends Resource
 {
@@ -56,12 +60,68 @@ class IngenierResource extends Resource
                         ]),
                     ]),
 
+                Section::make('Foto')
+                    ->description('Sube una foto del ingeniero. Se mostrará en su tarjeta de perfil.')
+                    ->schema([
+                        FotoUpload::make('foto')
+                            ->label(''),
+                    ]),
+
                 Section::make('Firma')
                     ->description('Dibuja la firma con el mouse/trackpad o sube una imagen PNG.')
                     ->schema([
                         FirmaPad::make('firma_svg')
                             ->label('Firma'),
                     ]),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Datos del ingeniero')
+                    ->schema([
+                        Infolists\Components\Grid::make(2)->schema([
+                            Infolists\Components\ViewEntry::make('foto')
+                                ->label('Foto')
+                                ->view('filament.ingenieros.foto-preview')
+                                ->columnSpanFull()
+                                ->visible(fn ($record) => !empty($record->foto)),
+
+                            Infolists\Components\TextEntry::make('nombre')
+                                ->label('Nombre completo'),
+
+                            Infolists\Components\TextEntry::make('cargo')
+                                ->label('Cargo')
+                                ->placeholder('—'),
+
+                            Infolists\Components\TextEntry::make('cedula_profesional')
+                                ->label('Cédula profesional')
+                                ->placeholder('—'),
+
+                            Infolists\Components\TextEntry::make('email')
+                                ->label('Correo electrónico')
+                                ->placeholder('—'),
+
+                            Infolists\Components\IconEntry::make('activo')
+                                ->label('Activo')
+                                ->boolean(),
+
+                            Infolists\Components\TextEntry::make('created_at')
+                                ->label('Registrado')
+                                ->date('d/m/Y'),
+                        ]),
+                    ]),
+
+                Infolists\Components\Section::make('Firma')
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('firma_svg')
+                            ->label('')
+                            ->view('filament.ingenieros.firma-preview'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false),
             ]);
     }
 
@@ -104,10 +164,18 @@ class IngenierResource extends Resource
                     ->falseLabel('Solo inactivos'),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->defaultSort('nombre');
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ReportesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
@@ -115,6 +183,7 @@ class IngenierResource extends Resource
         return [
             'index'  => Pages\ListIngenieros::route('/'),
             'create' => Pages\CreateIngeniero::route('/create'),
+            'view'   => Pages\ViewIngeniero::route('/{record}'),
             'edit'   => Pages\EditIngeniero::route('/{record}/edit'),
         ];
     }

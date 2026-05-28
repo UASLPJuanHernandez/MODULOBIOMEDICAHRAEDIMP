@@ -74,12 +74,45 @@
 {{-- ================================================================ --}}
 {{-- PESTAÑA: VALES DE INVENTARIO                                     --}}
 {{-- ================================================================ --}}
-@if($tabActiva === 'vales')
+@if($tabActiva === 'vales' && $vistaDoc === 'lista')
+
+{{-- Sub-pestañas por estado --}}
+<div class="flex items-center gap-1 mb-5">
+    @foreach(['pendientes' => ['Pendientes','warning'], 'culminados' => ['Culminados','success']] as $sub => [$lbl, $col])
+    @php
+        $cntSub = match($sub) {
+            'pendientes' => \App\Models\ValeInventario::whereIn('estado',['pendiente','en_firma'])->count(),
+            'culminados' => \App\Models\ValeInventario::where('estado','culminado')->count(),
+        };
+        $active = $vSubTab === $sub;
+        $cls = $active
+            ? "bg-{$col}-100 dark:bg-{$col}-900/30 text-{$col}-700 dark:text-{$col}-300"
+            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700';
+    @endphp
+    <button wire:click="cambiarSubTabVales('{{ $sub }}')"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition {{ $cls }}">
+        @if($sub === 'pendientes')
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        @else
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        @endif
+        {{ $lbl }}
+        @if($cntSub > 0)
+        <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-bold
+                     {{ $active ? "bg-{$col}-200 dark:bg-{$col}-800 text-{$col}-800 dark:text-{$col}-200" : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' }}">
+            {{ $cntSub }}
+        </span>
+        @endif
+    </button>
+    @endforeach
+</div>
 
 {{-- Barra de filtros --}}
 <div class="flex flex-wrap items-center gap-3 mb-4">
-
-    {{-- Buscador --}}
     <div class="relative flex-1 min-w-[200px]">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,16 +123,12 @@
                type="text" placeholder="Buscar por equipo, área, no. inventario…"
                class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
     </div>
-
-    {{-- Filtro tipo --}}
     <select wire:model.live="vFiltroTipo"
             class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
         <option value="">Todos los tipos</option>
         <option value="entrega">Vale de Entrega</option>
         <option value="retiro">Vale de Retiro</option>
     </select>
-
-    {{-- Rango de fechas --}}
     <div class="flex items-center gap-1.5">
         <input wire:model.live="vFechaDesde" type="date"
                class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -107,8 +136,6 @@
         <input wire:model.live="vFechaHasta" type="date"
                class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
     </div>
-
-    {{-- Limpiar filtros --}}
     @if($vFiltroTipo || $vBusqueda || $vFechaDesde || $vFechaHasta)
     <button wire:click="limpiarFiltrosVales"
             class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-1 transition">
@@ -128,20 +155,21 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
     </svg>
-    <p class="text-gray-500 dark:text-gray-400 font-medium">No hay vales que coincidan.</p>
+    <p class="text-gray-500 dark:text-gray-400 font-medium">No hay vales en este estado.</p>
 </div>
 @else
 <div class="w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-x-auto mb-4">
-    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <table class="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
-                <th class="w-[130px] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-left:1.5rem">Fecha</th>
-                <th class="w-[120px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Tipo</th>
-                <th class="w-[130px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">No. Inventario</th>
+                <th class="w-[120px] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-left:1.5rem">Fecha</th>
+                <th class="w-[110px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Tipo</th>
+                <th class="w-[120px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">No. Inventario</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Equipo</th>
-                <th class="w-[160px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Área</th>
-                <th class="w-[140px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Generado por</th>
-                <th class="w-[90px] py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-right:1.5rem">Acción</th>
+                <th class="w-[190px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                    {{ $vSubTab === 'culminados' ? 'Firma' : 'Estado' }}
+                </th>
+                <th class="w-[180px] py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-right:1.5rem">Acciones</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -153,16 +181,12 @@
                 <td class="px-4 py-3.5">
                     @if($vale->tipo === 'entrega')
                         <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Entrega
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-7 7-7-7"/>
-                            </svg>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-7 7-7-7"/></svg>
                             Retiro
                         </span>
                     @endif
@@ -173,16 +197,34 @@
                 <td class="px-4 py-3.5 text-sm text-gray-700 dark:text-gray-300 truncate">
                     {{ $vale->equipo_nombre ?: '—' }}
                 </td>
-                <td class="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {{ $vale->area ?: '—' }}
-                </td>
-                <td class="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {{ $vale->usuario_nombre ?: '—' }}
+                <td class="px-4 py-3.5">
+                    @if($vSubTab === 'culminados')
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+                            Firmado · {{ $vale->firmado_at?->format('d/m/Y') ?? '—' }}
+                        </span>
+                    @elseif($vale->estado === 'en_firma')
+                        <div class="flex flex-col gap-0.5">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full w-fit bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                En espera de firma
+                            </span>
+                            @if($vale->jefe)
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 truncate">→ {{ $vale->jefe->nombre }}</span>
+                            @endif
+                        </div>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Pendiente
+                        </span>
+                    @endif
                 </td>
                 <td class="py-3.5 text-right" style="padding-right:1.5rem">
                     <div class="flex items-center justify-end gap-1.5">
+                        {{-- Ver (PDF preview) --}}
                         <button wire:click="verVale({{ $vale->id }})"
-                                class="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition text-white"
+                                class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition text-white"
                                 style="background-color:#16a34a;">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -190,13 +232,25 @@
                             </svg>
                             Ver
                         </button>
-                        <a href="{{ route('inventario.vale.redescargar', $vale) }}" target="_blank"
-                           class="inline-flex items-center gap-1.5 text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-semibold px-3 py-1.5 rounded-lg transition">
+                        {{-- Descargar PDF --}}
+                        <a href="{{ route('inventario.vale.descargar-pdf', $vale) }}" target="_blank"
+                           class="inline-flex items-center gap-1 text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-semibold px-2.5 py-1.5 rounded-lg transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
-                            Descargar
+                            PDF
                         </a>
+                        {{-- Concretar (solo si aún no fue enviado a firma) --}}
+                        @if($vSubTab === 'pendientes' && $vale->estado === 'pendiente')
+                        <button wire:click="abrirConcretarVale({{ $vale->id }})"
+                                class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition text-white"
+                                style="background-color:#4f46e5;">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            Concretar
+                        </button>
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -204,11 +258,10 @@
         </tbody>
     </table>
 </div>
-{{-- Paginación --}}
 <div class="mt-2">{{ $vales->links() }}</div>
 @endif
 
-@endif {{-- fin tab vales --}}
+@endif {{-- fin tab vales lista --}}
 
 
 {{-- ================================================================ --}}
@@ -228,7 +281,7 @@
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         Pendientes
-        @php $cntRegPend = \App\Models\Registro::where('es_borrador',false)->where('estado','pendiente')->count(); @endphp
+        @php $cntRegPend = \App\Models\Registro::where('es_borrador',false)->whereIn('estado',['pendiente','en_firma'])->count(); @endphp
         @if($cntRegPend > 0)
         <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-bold bg-warning-200 dark:bg-warning-800 text-warning-800 dark:text-warning-200">
             {{ $cntRegPend }}
@@ -246,6 +299,13 @@
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         Culminados
+        @php $cntRegCulm = \App\Models\Registro::where('es_borrador',false)->where('estado','culminado')->count(); @endphp
+        @if($cntRegCulm > 0)
+        <span class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-bold
+                     {{ $rSubTab === 'culminado' ? 'bg-teal-200 dark:bg-teal-800 text-teal-800 dark:text-teal-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' }}">
+            {{ $cntRegCulm }}
+        </span>
+        @endif
     </button>
 </div>
 
@@ -421,7 +481,7 @@
 </div>
 @else
 <div class="w-full bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-x-auto mb-4">
-    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <table class="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
                 <th class="w-[110px] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-left:1.5rem">Fecha</th>
@@ -505,6 +565,7 @@
 {{-- PESTAÑA: REPORTES                                                 --}}
 {{-- ================================================================ --}}
 @if($tabActiva === 'reportes')
+
 
 {{-- Sub-pestañas Pendientes / Completados --}}
 <div class="flex items-center gap-1 mb-5">
@@ -591,12 +652,10 @@
             <tr>
                 <th class="w-[110px] py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-left:1.5rem">Fecha</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Equipo / Descripción</th>
-                <th class="w-[160px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Área</th>
-                <th class="w-[140px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Responsable</th>
-                @if($rpSubTab === 'completados')
-                <th class="w-[130px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Concretado</th>
-                @endif
-                <th class="{{ $rpSubTab === 'pendientes' ? 'w-[180px]' : 'w-[100px]' }} py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-right:1.5rem">Acciones</th>
+                <th class="w-[150px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Área</th>
+                <th class="w-[130px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Responsable</th>
+                <th class="w-[150px] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Estado</th>
+                <th class="w-[180px] py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap" style="padding-right:1.5rem">Acciones</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -615,11 +674,35 @@
                 <td class="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400 truncate">
                     {{ $rp->responsable ?: '—' }}
                 </td>
-                @if($rpSubTab === 'completados')
-                <td class="px-4 py-3.5 text-sm text-gray-400 dark:text-gray-500">
-                    {{ $rp->concretado_at?->format('d/m/Y H:i') ?? '—' }}
+                <td class="px-4 py-3.5">
+                    @if($rp->concretado)
+                        <div class="flex flex-col gap-0.5">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full w-fit bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+                                Concretado
+                            </span>
+                            @if($rp->concretado_at)
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ $rp->concretado_at->format('d/m/Y H:i') }}</span>
+                            @endif
+                        </div>
+                    @elseif($rp->firmaSolicitud && !$rp->firmaSolicitud->firmado_at)
+                        @php $jefeFirma = \App\Models\PersonalReportante::find($rp->firmaSolicitud->personal_reportante_id); @endphp
+                        <div class="flex flex-col gap-0.5">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full w-fit bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                En espera de firma
+                            </span>
+                            @if($jefeFirma)
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 truncate">→ {{ $jefeFirma->nombre }}</span>
+                            @endif
+                        </div>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Pendiente
+                        </span>
+                    @endif
                 </td>
-                @endif
                 <td class="py-3.5 text-right" style="padding-right:1.5rem">
                     @if($rpSubTab === 'pendientes')
                     <button type="button"
@@ -635,24 +718,17 @@
                     @if($rp->bitacora)
                     <div class="flex items-center gap-1.5 justify-end">
                         <a href="{{ route('bitacora.preview', $rp->bitacora) }}" target="_blank"
-                           class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg
-                                  border border-indigo-300 text-indigo-600 dark:text-indigo-400
-                                  hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
+                           class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-indigo-300 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                             Ver PDF
                         </a>
                         <a href="{{ route('bitacora.descargar', $rp->bitacora) }}"
-                           class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg
-                                  border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300
-                                  hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                           class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
                             Descargar
                         </a>
@@ -836,12 +912,12 @@
                 </span>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('inventario.vale.redescargar', $vv) }}" target="_blank"
+                <a href="{{ route('inventario.vale.descargar-pdf', $vv) }}" target="_blank"
                    class="inline-flex items-center gap-1.5 text-xs bg-primary-100 hover:bg-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 text-primary-700 dark:text-primary-300 font-semibold px-3 py-1.5 rounded-lg transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Descargar DOCX
+                    Descargar PDF
                 </a>
                 <button wire:click="cerrarVale"
                         class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
@@ -1041,5 +1117,6 @@
     </div>
 </div>
 @endif
+
 
 </x-filament-panels::page>

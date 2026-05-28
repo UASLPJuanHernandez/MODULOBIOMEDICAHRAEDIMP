@@ -10,6 +10,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -167,7 +168,7 @@ class BitacoraReporteResource extends Resource
                 ]),
 
             Section::make('Resultado')
-                ->columns(1)
+                ->columns(2)
                 ->schema([
                     Select::make('resultado')
                         ->label('La solicitud fue resuelta de forma...')
@@ -176,6 +177,15 @@ class BitacoraReporteResource extends Resource
                             'parcial'          => 'Parcial',
                             'no_satisfactoria' => 'No satisfactoria',
                         ])
+                        ->required(),
+
+                    Radio::make('tipo_servicio')
+                        ->label('Tipo de servicio')
+                        ->options([
+                            'preventivo'  => 'Preventivo',
+                            'correctivo'  => 'Correctivo',
+                        ])
+                        ->inline()
                         ->required(),
                 ]),
 
@@ -197,6 +207,9 @@ class BitacoraReporteResource extends Resource
                         ->label('Número de serie')
                         ->required()
                         ->hint('Si es un consumible, escribir "Consumible"'),
+
+                    TextInput::make('numero_control')
+                        ->label('N° de control'),
                 ]),
 
             Section::make('Firmas')

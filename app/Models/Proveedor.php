@@ -50,7 +50,7 @@ class Proveedor extends Model
         return $query->where('nombre_proveedor', 'like', "%{$nombre}%");
     }
 
-    public function scopeByMontoTotal($query, float $montoMin, float $montoMax = null)
+    public function scopeByMontoTotal($query, float $montoMin, ?float $montoMax = null)
     {
         $query->where('monto_total', '>=', $montoMin);
         if ($montoMax) {

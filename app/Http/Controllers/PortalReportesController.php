@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PersonalReportante;
 use App\Models\Registro;
 use App\Models\ReportePizarron;
+use App\Services\AuditService;
 use App\Services\GeminiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,13 @@ class PortalReportesController extends Controller
         }
 
         Auth::guard('personal')->login($personal, $request->boolean('remember'));
+
+        AuditService::log('acceso', "Inicio de sesión en /reportes — {$personal->nombre}", [
+            'actor_tipo'   => 'personal',
+            'actor_id'     => $personal->id,
+            'actor_nombre' => $personal->nombre,
+            'origen'       => '/reportes',
+        ]);
 
         return redirect()->route('portal.reportes.form');
     }
@@ -150,7 +158,28 @@ class PortalReportesController extends Controller
             ->latest()
             ->get();
 
-        return view('portal.firmas', compact('personal', 'porTipo', 'solicitudesFirma'));
+        $valesAsignados = \App\Models\ValeInventario::where('jefe_id', $personal->id)
+            ->whereIn('estado', ['en_firma', 'culminado'])
+            ->latest()
+            ->get();
+
+        return view('portal.firmas', compact('personal', 'porTipo', 'solicitudesFirma', 'valesAsignados'));
+    }
+
+    public function confirmarVale(\App\Models\ValeInventario $vale)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($vale->jefe_id === $personal->id, 403);
+        abort_unless($vale->estado === 'en_firma', 400);
+
+        $vale->update([
+            'estado'        => 'culminado',
+            'firmado_at'    => now(),
+            'concretado_at' => now(),
+        ]);
+
+        return back()->with('vale_confirmado', $vale->id);
     }
 
     public function firmar(Request $request, \App\Models\FirmaSolicitud $solicitud)
@@ -185,6 +214,14 @@ class PortalReportesController extends Controller
             'firma_data' => $savedData,
         ]);
 
+        AuditService::log('firma', "Reporte #{$solicitud->reporte_pizarron_id} firmado por {$personal->nombre}", [
+            'actor_tipo'     => 'personal',
+            'actor_id'       => $personal->id,
+            'actor_nombre'   => $personal->nombre,
+            'documento_tipo' => 'solicitud',
+            'documento_id'   => $solicitud->id,
+        ]);
+
         // Marcar el reporte como concretado ahora que el jefe firmó
         if ($solicitud->reporte_pizarron_id) {
             \App\Models\ReportePizarron::where('id', $solicitud->reporte_pizarron_id)
@@ -200,9 +237,67 @@ class PortalReportesController extends Controller
         abort_unless($personal->es_jefe_servicio, 403);
 
         $total = Registro::where('jefe_id', $personal->id)->where('estado', 'en_firma')->count()
-            + \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)->where('estado', 'pendiente')->count();
+            + \App\Models\FirmaSolicitud::where('personal_reportante_id', $personal->id)->where('estado', 'pendiente')->count()
+            + \App\Models\ValeInventario::where('jefe_id', $personal->id)->where('estado', 'en_firma')->count();
 
         return response()->json(['total' => $total]);
+    }
+
+    public function portalValePdf(\App\Models\ValeInventario $vale)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($vale->jefe_id === $personal->id, 403);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.vale-inventario-preview', compact('vale'))
+            ->setPaper('letter', 'portrait');
+
+        return $pdf->stream('vale-preview-' . $vale->id . '.pdf');
+    }
+
+    public function showFirmarVale(\App\Models\ValeInventario $vale)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($vale->jefe_id === $personal->id, 403);
+
+        return view('portal.firmar-vale', compact('vale', 'personal'));
+    }
+
+    public function firmarValePortal(Request $request, \App\Models\ValeInventario $vale)
+    {
+        $personal = Auth::guard('personal')->user();
+
+        abort_unless($vale->jefe_id === $personal->id, 403);
+        abort_unless($vale->estado === 'en_firma', 400);
+
+        $request->validate([
+            'firma_posicion' => 'required|string',
+        ], [
+            'firma_posicion.required' => 'Coloca tu firma en el documento antes de confirmar.',
+        ]);
+
+        $firmaData = $request->input('firma_data') ?: $personal->firma;
+
+        if (! $firmaData) {
+            return back()->withErrors(['firma' => 'No tienes firma registrada.']);
+        }
+
+        $vale->update([
+            'estado'       => 'culminado',
+            'firmado_at'   => now(),
+            'firma_imagen' => $firmaData,
+        ]);
+
+        AuditService::log('firma', "Vale #{$vale->id} firmado: {$vale->equipo_nombre} — {$vale->area}", [
+            'actor_tipo'     => 'personal',
+            'actor_id'       => $personal->id,
+            'actor_nombre'   => $personal->nombre,
+            'documento_tipo' => 'vale',
+            'documento_id'   => $vale->id,
+        ]);
+
+        return redirect()->route('portal.firmas')->with('vale_confirmado', $vale->id);
     }
 
     public function firmasUpdated()
@@ -260,6 +355,14 @@ class PortalReportesController extends Controller
             'estado'          => 'culminado',
             'firmado_at'      => now(),
             'firma_jefe_data' => $request->firma_posicion,
+        ]);
+
+        AuditService::log('firma', "Registro #{$registro->id} firmado por {$personal->nombre}", [
+            'actor_tipo'     => 'personal',
+            'actor_id'       => $personal->id,
+            'actor_nombre'   => $personal->nombre,
+            'documento_tipo' => 'registro',
+            'documento_id'   => $registro->id,
         ]);
 
         return redirect()->route('portal.firmas')->with('firmado_id', $registro->id);

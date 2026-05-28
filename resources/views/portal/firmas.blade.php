@@ -62,6 +62,9 @@
         @if(session('firmado_id'))
         <div class="alert-ok">✓ Documento firmado correctamente.</div>
         @endif
+        @if(session('vale_confirmado'))
+        <div class="alert-ok">✓ Vale confirmado correctamente.</div>
+        @endif
 
         @php
             $tipos = [
@@ -80,6 +83,9 @@
                 $cnt = $porTipo[$key]->where('estado','en_firma')->count();
                 if ($key === 'reporte') {
                     $cnt += $solicitudesFirma->where('estado','pendiente')->count();
+                }
+                if ($key === 'vale') {
+                    $cnt += $valesAsignados->where('estado','en_firma')->count();
                 }
             @endphp
             <button class="tab-btn {{ $loop->first ? 'active' : '' }}" data-tab="{{ $key }}" onclick="cambiarTab('{{ $key }}', this)">
@@ -100,7 +106,11 @@
                 $firmadosTab   = $items->where('estado', 'culminado');
                 $solPendientes = $key === 'reporte' ? $solicitudesFirma->where('estado', 'pendiente') : collect();
                 $solFirmadas   = $key === 'reporte' ? $solicitudesFirma->where('estado', 'firmado')   : collect();
-                $hayContenido  = $items->isNotEmpty() || ($key === 'reporte' && $solicitudesFirma->isNotEmpty());
+                $valesPend     = $key === 'vale' ? $valesAsignados->where('estado', 'en_firma')   : collect();
+                $valesFirm     = $key === 'vale' ? $valesAsignados->where('estado', 'culminado')  : collect();
+                $hayContenido  = $items->isNotEmpty()
+                    || ($key === 'reporte' && $solicitudesFirma->isNotEmpty())
+                    || ($key === 'vale' && $valesAsignados->isNotEmpty());
             @endphp
 
             @if(! $hayContenido)
@@ -112,6 +122,37 @@
                 <p>No tienes {{ strtolower($label) }} asignados.</p>
             </div>
             @else
+
+                {{-- Vales de inventario por firmar --}}
+                @if($valesPend->isNotEmpty())
+                <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.05em;margin-bottom:8px;">
+                    Por firmar ({{ $valesPend->count() }})
+                </p>
+                @foreach($valesPend as $vl)
+                <div class="card">
+                    <div class="card-header">
+                        <div style="min-width:0;flex:1;">
+                            <div class="reg-id">{{ $vl->tipo === 'entrega' ? 'Vale de Entrega' : 'Vale de Retiro' }}</div>
+                            <div class="reg-sub">{{ $vl->equipo_nombre ?: '—' }} @if($vl->numero_inventario)— {{ $vl->numero_inventario }}@endif</div>
+                            <div class="meta">Área: {{ $vl->area ?: '—' }}</div>
+                            @if($vl->quien_recibe)<div class="meta">Recibe: {{ $vl->quien_recibe }}@if($vl->cargo_recibe) · {{ $vl->cargo_recibe }}@endif</div>@endif
+                            <div class="meta">{{ $vl->created_at->format('d/m/Y H:i') }}</div>
+                        </div>
+                        <span class="badge-pendiente">Por firmar</span>
+                    </div>
+                    <div class="card-footer">
+                        <span></span>
+                        <a href="{{ route('portal.vales.ver', $vl) }}" class="btn-firmar">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z"/>
+                            </svg>
+                            Ver y firmar
+                        </a>
+                    </div>
+                </div>
+                @endforeach
+                @endif
 
                 {{-- Por firmar: registros de formato --}}
                 @if($pendientesTab->isNotEmpty() || $solPendientes->isNotEmpty())
@@ -126,10 +167,7 @@
                         <div style="min-width:0;flex:1;">
                             <div class="reg-id">{{ $reg->identificador ?: 'Registro #' . $reg->id }}</div>
                             <div class="reg-sub">{{ $reg->formato?->nombre ?? '—' }}</div>
-                            <div class="meta">
-                                Generado por: {{ $reg->usuario?->name ?? '—' }}
-                                &nbsp;·&nbsp; {{ $reg->created_at->format('d/m/Y H:i') }}
-                            </div>
+                            <div class="meta">{{ $reg->created_at->format('d/m/Y H:i') }}</div>
                         </div>
                         <span class="badge-pendiente">Por firmar</span>
                     </div>
@@ -182,10 +220,7 @@
                         <div style="min-width:0;flex:1;">
                             <div class="reg-id">{{ $reg->identificador ?: 'Registro #' . $reg->id }}</div>
                             <div class="reg-sub">{{ $reg->formato?->nombre ?? '—' }}</div>
-                            <div class="meta">
-                                Generado por: {{ $reg->usuario?->name ?? '—' }}
-                                &nbsp;·&nbsp; Firmado: {{ $reg->firmado_at?->format('d/m/Y H:i') ?? '—' }}
-                            </div>
+                            <div class="meta">Firmado: {{ $reg->firmado_at?->format('d/m/Y H:i') ?? '—' }}</div>
                         </div>
                         <span class="badge-firmado">Firmado ✓</span>
                     </div>
@@ -235,6 +270,38 @@
                 @endforeach
                 @endif
 
+                {{-- Vales firmados --}}
+                @if($valesFirm->isNotEmpty())
+                <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.05em;margin-top:18px;margin-bottom:8px;">
+                    Firmados ({{ $valesFirm->count() }})
+                </p>
+                @foreach($valesFirm as $vl)
+                <div class="card">
+                    <div class="card-header">
+                        <div style="min-width:0;flex:1;">
+                            <div class="reg-id">{{ $vl->tipo === 'entrega' ? 'Vale de Entrega' : 'Vale de Retiro' }}</div>
+                            <div class="reg-sub">{{ $vl->equipo_nombre ?: '—' }} @if($vl->numero_inventario)— {{ $vl->numero_inventario }}@endif</div>
+                            <div class="meta">Firmado: {{ $vl->firmado_at?->format('d/m/Y H:i') ?? '—' }}</div>
+                        </div>
+                        <span class="badge-firmado">Firmado ✓</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="firmado-info">✓ Firmado</span>
+                        <div style="display:flex;gap:8px;">
+                            <a href="{{ route('portal.vales.pdf', $vl) }}" target="_blank" class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                Ver
+                            </a>
+                            <a href="{{ route('portal.vales.pdf', $vl) }}" download class="btn-pdf">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Descargar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+                @endif
+
             @endif
         </div>
         @endforeach
@@ -252,7 +319,8 @@
 
     @php
         $totalInicial = collect($porTipo)->flatten()->where('estado','en_firma')->count()
-            + $solicitudesFirma->where('estado','pendiente')->count();
+            + $solicitudesFirma->where('estado','pendiente')->count()
+            + $valesAsignados->where('estado','en_firma')->count();
     @endphp
     (function () {
         var lastTotal = {{ $totalInicial }};

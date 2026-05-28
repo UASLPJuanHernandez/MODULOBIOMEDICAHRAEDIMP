@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\InventarioEquipo;
 use App\Models\InventarioEquipoHistorial;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 
@@ -113,6 +114,16 @@ class InventarioEquipoObserver
             'usuario_id'           => $usuario?->id,
             'usuario_nombre'       => $usuario?->name ?? 'Sistema',
             'ip_address'           => Request::ip(),
+        ]);
+
+        $equipoLabel = trim(($equipo->numero_inventario ? "[{$equipo->numero_inventario}] " : '') . ($equipo->equipo ?? ''));
+        AuditService::log('equipo', "{$descripcion}: {$equipoLabel}", [
+            'actor_tipo'     => 'admin',
+            'actor_id'       => $usuario?->id ?? 0,
+            'actor_nombre'   => $usuario?->name ?? 'Sistema',
+            'documento_tipo' => 'equipo',
+            'documento_id'   => $equipo->id,
+            'metadata'       => ['tipo_evento' => $tipoEvento, 'area' => $equipo->area],
         ]);
     }
 

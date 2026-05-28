@@ -3,7 +3,16 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ValeInventarioResource\Pages;
+use App\Models\PersonalReportante;
 use App\Models\ValeInventario;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Set;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -26,10 +35,97 @@ class ValeInventarioResource extends Resource
     protected static ?int    $navigationSort  = 3;
     protected static bool    $shouldRegisterNavigation = false;
 
-    // Sin formulario de creación/edición — los vales se generan desde el inventario
-    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    private static array $AREAS = [
+        'Audiología','Anestesiología','Banco de Sangre','Banco de Leches',
+        'Cardiología','CEYE','Cirugía Ambulatoria','Cirugías','Clínica de catéter',
+        'Clínica displacías','Consultorio pediatría','Consultorio ginecología',
+        'Crecimiento y desarrollo','Cuidados intermedios','Dermatología','Dietología',
+        'Endoscopia','Farmacia','Ginecología y obstetricia','Hemodiálisis','Hemodinamia',
+        'Imagenología','Inhaloterapia','Laboratorio','Lactantes','Maxilofacial',
+        'Neonatología','Medicina interna','Neurología','Oncología adultos',
+        'Oncología pediátrica','Oftalmología','Ortopedia','Otorrinolaringología',
+        'Patología','Pediatría','Quemados','Quirófano','Radioterapia','Rehabilitación',
+        'Reumatología','Somatometría','Tococirugía','Trasplantes',
+        'UCIA','UCIN','UCIN aislados','UCIP','Urgencias',
+    ];
+
+    public static function form(Form $form): Form
     {
-        return $form->schema([]);
+        $areas = array_combine(self::$AREAS, self::$AREAS);
+
+        return $form->schema([
+
+            Section::make('Tipo de vale')
+                ->columns(2)
+                ->schema([
+                    Select::make('tipo')
+                        ->label('Tipo de movimiento')
+                        ->options([
+                            'entrega' => 'Entrega (alta / préstamo)',
+                            'retiro'  => 'Retiro (baja / devolución)',
+                        ])
+                        ->required(),
+
+                    Select::make('area')
+                        ->label('Área / Servicio')
+                        ->options($areas)
+                        ->searchable()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function (?string $state, Set $set) {
+                            if (! $state) return;
+                            $jefe = PersonalReportante::where('es_jefe_servicio', true)
+                                ->where('area_jefe_servicio', $state)
+                                ->value('nombre');
+                            if ($jefe) {
+                                $set('quien_recibe', $jefe);
+                            }
+                        }),
+                ]),
+
+            Section::make('Datos del equipo')
+                ->columns(2)
+                ->schema([
+                    TextInput::make('equipo_nombre')
+                        ->label('Descripción del equipo')
+                        ->required()
+                        ->columnSpanFull(),
+
+                    TextInput::make('numero_inventario')
+                        ->label('No. Inventario'),
+
+                    TextInput::make('numero_serie')
+                        ->label('No. Serie'),
+
+                    TextInput::make('marca')
+                        ->label('Marca'),
+
+                    TextInput::make('modelo')
+                        ->label('Modelo'),
+
+                    TextInput::make('unidad_medica')
+                        ->label('Unidad médica')
+                        ->columnSpanFull(),
+                ]),
+
+            Section::make('Receptor')
+                ->columns(2)
+                ->schema([
+                    TextInput::make('quien_recibe')
+                        ->label('Nombre de quien recibe'),
+
+                    TextInput::make('cargo_recibe')
+                        ->label('Cargo / puesto'),
+                ]),
+
+            Section::make('Observaciones')
+                ->schema([
+                    Textarea::make('observaciones')
+                        ->label('Observaciones')
+                        ->rows(3),
+                ]),
+
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -141,7 +237,9 @@ class ValeInventarioResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListValeInventarios::route('/'),
+            'index'     => Pages\ListValeInventarios::route('/'),
+            'concretar' => Pages\ConcretarVale::route('/{record}/concretar'),
+            'firmar'    => Pages\FirmarVale::route('/{record}/firmar'),
         ];
     }
 

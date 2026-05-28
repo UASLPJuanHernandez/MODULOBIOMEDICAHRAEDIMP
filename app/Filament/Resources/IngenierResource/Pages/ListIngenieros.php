@@ -37,8 +37,11 @@ class ListIngenieros extends Page
                 ->modalSubmitAction(false)
                 ->modalCancelActionLabel('Cerrar'),
 
-            Actions\CreateAction::make()
-                ->label('Nuevo ingeniero'),
+            Actions\Action::make('nuevo_ingeniero')
+                ->label('Nuevo ingeniero')
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->url(IngenierResource::getUrl('create')),
         ];
     }
 

@@ -9,6 +9,7 @@ use App\Models\Ingeniero;
 use App\Models\PersonalReportante;
 use App\Models\Registro;
 use App\Models\ReportePizarron;
+use App\Filament\Resources\ValeInventarioResource;
 use App\Models\ValeInventario;
 use Filament\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
@@ -26,6 +27,7 @@ class DocumentosGenerados extends Page
     // ---------------------------------------------------------------
     public string $vistaDoc         = 'lista';
     public ?int   $registroViendoId = null;
+
 
     // ---------------------------------------------------------------
     // Pestañas principales y filtros
@@ -100,7 +102,14 @@ class DocumentosGenerados extends Page
     // ---------------------------------------------------------------
     public function getVales()
     {
+        $estados = match($this->vSubTab) {
+            'culminados' => ['culminado'],
+            default      => ['pendiente', 'en_firma'],
+        };
+
         return ValeInventario::query()
+            ->whereIn('estado', $estados)
+            ->with('jefe')
             ->when($this->vFiltroTipo, fn ($q) => $q->where('tipo', $this->vFiltroTipo))
             ->when($this->vBusqueda, fn ($q) =>
                 $q->where(function ($sub) {
@@ -172,7 +181,7 @@ class DocumentosGenerados extends Page
     // ---------------------------------------------------------------
     public function getBadgeVales(): int
     {
-        return ValeInventario::whereDate('created_at', today())->count();
+        return ValeInventario::where('estado', 'pendiente')->count();
     }
 
     public function getBadgeRegistros(): int
@@ -456,5 +465,31 @@ class DocumentosGenerados extends Page
             ]);
 
         $this->cerrarModalEnviar();
+    }
+
+    // ---------------------------------------------------------------
+    // Filtro de vales — sub-pestaña por estado
+    // ---------------------------------------------------------------
+    public string $vSubTab = 'pendientes'; // pendientes | en_firma | culminados
+
+    public function cambiarSubTabVales(string $sub): void
+    {
+        $this->vSubTab    = $sub;
+        $this->vBusqueda  = '';
+        $this->vFechaDesde = '';
+        $this->vFechaHasta = '';
+    }
+
+    // ---------------------------------------------------------------
+    // Concretar vale — modal
+    // ---------------------------------------------------------------
+    public function abrirConcretarVale(int $valeId): void
+    {
+        $vale = ValeInventario::find($valeId);
+        if (! $vale) return;
+
+        $this->redirect(
+            \App\Filament\Resources\ValeInventarioResource::getUrl('concretar', ['record' => $vale])
+        );
     }
 }

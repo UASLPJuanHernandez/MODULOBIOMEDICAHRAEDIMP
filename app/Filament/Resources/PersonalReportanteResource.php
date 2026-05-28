@@ -64,6 +64,15 @@ class PersonalReportanteResource extends Resource
                 Tables\Columns\TextColumn::make('servicio')
                     ->label('Servicio / Área')
                     ->searchable(),
+                Tables\Columns\IconColumn::make('es_jefe_servicio')
+                    ->label('Jefe de Servicio')
+                    ->boolean()
+                    ->alignCenter(),
+                Tables\Columns\TextColumn::make('area_jefe_servicio')
+                    ->label('Área (jefe)')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->visible(fn () => true),
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
                     ->colors([
@@ -100,17 +109,15 @@ class PersonalReportanteResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Aprobar registro')
                     ->modalDescription(fn (PersonalReportante $record) => "¿Aprobar el acceso de {$record->nombre} ({$record->servicio})?")
-                    ->action(fn (PersonalReportante $record) => $record->update(['estado' => 'aprobado'])),
-
-                Action::make('rechazar')
-                    ->label('Rechazar')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->visible(fn (PersonalReportante $record) => $record->estado !== 'rechazado')
-                    ->requiresConfirmation()
-                    ->modalHeading('Rechazar registro')
-                    ->modalDescription(fn (PersonalReportante $record) => "¿Rechazar la solicitud de {$record->nombre}?")
-                    ->action(fn (PersonalReportante $record) => $record->update(['estado' => 'rechazado'])),
+                    ->action(function (PersonalReportante $record) {
+                        $record->update(['estado' => 'aprobado']);
+                        \App\Services\AuditService::log('usuario', "Usuario aprobado: {$record->nombre} ({$record->servicio})", [
+                            'actor_tipo'   => 'admin',
+                            'actor_id'     => auth()->id() ?? 0,
+                            'actor_nombre' => auth()->user()?->name ?? 'Admin',
+                            'metadata'     => ['personal_id' => $record->id, 'es_jefe' => $record->es_jefe_servicio],
+                        ]);
+                    }),
 
                 Tables\Actions\DeleteAction::make()->label('Eliminar'),
             ])

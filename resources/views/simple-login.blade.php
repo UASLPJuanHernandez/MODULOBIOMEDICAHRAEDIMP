@@ -1,3 +1,6 @@
+@php
+    $loginBg = \App\Filament\Pages\CambiarFondoLogin::getFondoUrl();
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +17,11 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            @if($loginBg)
+            background: url('{{ $loginBg }}') center center / cover no-repeat fixed;
+            @else
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            @endif
             min-height: 100vh;
             display: flex;
             align-items: center;

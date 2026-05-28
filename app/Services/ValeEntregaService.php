@@ -48,6 +48,15 @@ class ValeEntregaService
     }
 
     /**
+     * Registra el vale de entrega en BD y devuelve el modelo creado.
+     * No genera el archivo físico; se descarga después desde la pestaña Vales.
+     */
+    public function registrarEntrega(InventarioEquipo $equipo): ValeInventario
+    {
+        return $this->registrarVale('entrega', $equipo);
+    }
+
+    /**
      * Alias sin descarga para la bulk action.
      */
     public function generarRetiroSinDescarga(InventarioEquipo $equipo): void

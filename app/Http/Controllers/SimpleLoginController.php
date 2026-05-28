@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -33,10 +34,14 @@ class SimpleLoginController extends Controller
             
             // Verificar que el usuario está autenticado
             if (Auth::check()) {
-                // Log de debug
-                \Log::info('Usuario autenticado exitosamente: ' . Auth::user()->email);
-                
-                // Redirigir al panel de administración
+                $user = Auth::user();
+                AuditService::log('acceso', "Inicio de sesión en /admin — {$user->name}", [
+                    'actor_tipo'   => 'admin',
+                    'actor_id'     => $user->id,
+                    'actor_nombre' => $user->name,
+                    'origen'       => '/admin',
+                ]);
+
                 return redirect('/admin')->with('success', 'Acceso autorizado correctamente');
             }
         }

@@ -23,6 +23,8 @@ class BitacoraReporte extends Model
         'marca',
         'modelo',
         'numero_serie',
+        'tipo_servicio',
+        'numero_control',
         'atiende_nombre',
         'recibe_nombre',
         'firma_ingeniero',

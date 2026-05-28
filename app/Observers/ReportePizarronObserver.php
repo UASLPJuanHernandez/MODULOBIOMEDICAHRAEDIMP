@@ -5,9 +5,21 @@ namespace App\Observers;
 use App\Models\BitacoraReporte;
 use App\Models\PersonalReportante;
 use App\Models\ReportePizarron;
+use App\Services\AuditService;
 
 class ReportePizarronObserver
 {
+    public function created(ReportePizarron $reporte): void
+    {
+        AuditService::log('reporte', "Nuevo reporte: {$reporte->equipo} — {$reporte->ubicacion}", [
+            'actor_tipo'     => 'personal',
+            'actor_id'       => $reporte->personal_reportante_id ?? 0,
+            'actor_nombre'   => $reporte->reportante_nombre ?? 'Sistema',
+            'documento_tipo' => 'reporte',
+            'documento_id'   => $reporte->id,
+        ]);
+    }
+
     public function updated(ReportePizarron $reporte): void
     {
         if (! $reporte->wasChanged('estado')) {

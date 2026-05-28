@@ -1,29 +1,26 @@
 import Echo from 'laravel-echo';
-
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
-
-// Escuchar canal privado de notificaciones administrativas
 try {
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+    });
+
+    // Escuchar canal privado de notificaciones administrativas
     window.Echo.private('admin-notifications')
         .listen('.admin.notification', (e) => {
             console.debug('Admin notification recibida', e);
-            // Mostrar en toast simple si Filament Notifications no está activo
             if (!window.dispatchEvent) return;
             const detail = { title: e.title, message: e.message, action: e.action, data: e.data, user: e.user, at: e.timestamp };
             window.dispatchEvent(new CustomEvent('admin-notification', { detail }));
 
-            // Fallback visual mínimo
             if (!document.querySelector('#admin-realtime-notifications')) {
                 const c = document.createElement('div');
                 c.id = 'admin-realtime-notifications';
@@ -42,5 +39,5 @@ try {
             setTimeout(()=>{ wrap.remove(); }, 8000);
         });
 } catch (err) {
-    console.warn('Error suscribiendo a admin-notifications', err);
+    console.warn('Reverb no disponible, notificaciones en tiempo real desactivadas.', err);
 }

@@ -56,9 +56,27 @@
         .cal-evento-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
         .cal-vacio { color: #9ca3af; font-size: 13px; font-style: italic; }
 
+        /* --- Salvapantallas --- */
+        #salvapantallas {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: #000 center center / cover no-repeat;
+        }
+
     </style>
 </head>
 <body>
+
+    @php $salvapantallasUrl = \App\Filament\Pages\CambiarFondoLogin::getSalvapantallasUrl(); @endphp
+
+    {{-- Overlay salvapantallas --}}
+    @if($salvapantallasUrl)
+    <div id="salvapantallas" style="background-image: url('{{ $salvapantallasUrl }}');"></div>
+    @else
+    <div id="salvapantallas" style="background: #111;"></div>
+    @endif
 
     {{-- ======= PIZARRON ======= --}}
     <div id="seccion-pizarron">
@@ -159,6 +177,29 @@
         var tick         = 0;
         var calTick      = 0;
 
+        // Salvapantallas: inactividad en segundos (30 min = 1800)
+        var IDLE_LIMITE  = 1800;
+        var idleSecs     = 0;
+        var enSalvapantallas = false;
+
+        function mostrarSalvapantallas() {
+            enSalvapantallas = true;
+            document.getElementById('salvapantallas').style.display = 'block';
+        }
+
+        function ocultarSalvapantallas() {
+            if (!enSalvapantallas) return;
+            enSalvapantallas = false;
+            idleSecs = 0;
+            document.getElementById('salvapantallas').style.display = 'none';
+            mostrarPizarron();
+        }
+
+        function registrarActividad() {
+            idleSecs = 0;
+            if (enSalvapantallas) ocultarSalvapantallas();
+        }
+
         function mostrarCalendario() {
             enCalendario = true;
             calTick = 0;
@@ -201,14 +242,24 @@
                 .catch(function() {});
         }
 
-        // Tick cada segundo
+        // Tick cada segundo — ciclo pizarrón/calendario + contador de inactividad
         setInterval(function() {
+            // Contador de inactividad siempre avanza
+            idleSecs++;
+            if (!enSalvapantallas && idleSecs >= IDLE_LIMITE) {
+                mostrarSalvapantallas();
+                return;
+            }
+
+            // Ciclo normal solo si no está el salvapantallas
+            if (enSalvapantallas) return;
+
             if (!enCalendario) {
                 tick++;
                 if (tick >= 60) mostrarCalendario();
             } else {
                 calTick++;
-                if (calTick >= 60) mostrarPizarron(); // 1 minuto
+                if (calTick >= 60) mostrarPizarron();
             }
         }, 1000);
 
@@ -222,7 +273,8 @@
                 .then(function(data) {
                     if (data.count !== lastCount) {
                         lastCount = data.count;
-                        mostrarPizarron();
+                        registrarActividad();
+                        if (!enSalvapantallas) mostrarPizarron();
                     }
                 })
                 .catch(function() {});
@@ -234,7 +286,8 @@
                         lastUpdated = data.updated_at;
                     } else if (data.updated_at !== lastUpdated) {
                         lastUpdated = data.updated_at;
-                        refreshPizarron();
+                        registrarActividad();
+                        if (!enSalvapantallas) refreshPizarron();
                     }
                 })
                 .catch(function() {});
@@ -246,7 +299,8 @@
                         lastEventosUpdated = data.updated_at;
                     } else if (data.updated_at !== lastEventosUpdated) {
                         lastEventosUpdated = data.updated_at;
-                        refreshCalendario();
+                        registrarActividad();
+                        if (!enSalvapantallas) refreshCalendario();
                     }
                 })
                 .catch(function() {});

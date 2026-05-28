@@ -21,7 +21,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use App\Filament\Pages\CambiarFondoLogin;
 use App\Http\Middleware\Authenticate;
+use Filament\Navigation\MenuItem;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
 class AdminPanelProvider extends PanelProvider
@@ -49,6 +51,12 @@ class AdminPanelProvider extends PanelProvider
             ->plugins([
                 FilamentFullCalendarPlugin::make()
                     ->schedulerLicenseKey('GPL-My-Project-Is-Open-Source'),
+            ])
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Imágenes')
+                    ->icon('heroicon-o-photo')
+                    ->url(fn () => CambiarFondoLogin::getUrl()),
             ])
             ->sidebarCollapsibleOnDesktop()
             ->middleware([

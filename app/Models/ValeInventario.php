@@ -11,6 +11,8 @@ class ValeInventario extends Model
 
     protected $fillable = [
         'tipo',
+        'estado',
+        'jefe_id',
         'inventario_equipo_id',
         'numero_inventario',
         'equipo_nombre',
@@ -21,6 +23,18 @@ class ValeInventario extends Model
         'numero_serie',
         'usuario_id',
         'usuario_nombre',
+        'quien_recibe',
+        'cargo_recibe',
+        'observaciones',
+        'firma_imagen',
+        'firma_ingeniero',
+        'firmado_at',
+        'concretado_at',
+    ];
+
+    protected $casts = [
+        'firmado_at'    => 'datetime',
+        'concretado_at' => 'datetime',
     ];
 
     public function inventarioEquipo(): BelongsTo
@@ -31,6 +45,11 @@ class ValeInventario extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function jefe(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\PersonalReportante::class, 'jefe_id');
     }
 
     public function getTipoLabelAttribute(): string

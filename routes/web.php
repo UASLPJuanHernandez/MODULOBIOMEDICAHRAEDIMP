@@ -95,6 +95,12 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.vale.redescargar');
     Route::get('/vale-inventario/{vale}/preview', [App\Http\Controllers\InventarioEquipoController::class, 'valePreview'])
         ->name('inventario.vale.preview');
+    Route::get('/vale-inventario/{vale}/descargar-pdf', [App\Http\Controllers\InventarioEquipoController::class, 'valeDescargarPdf'])
+        ->name('inventario.vale.descargar-pdf');
+    Route::post('/vale-inventario/{vale}/concretar', [App\Http\Controllers\InventarioEquipoController::class, 'concretarVale'])
+        ->name('inventario.vale.concretar');
+    Route::post('/vale-inventario/{vale}/firmar-jefe', [App\Http\Controllers\InventarioEquipoController::class, 'firmarValeJefe'])
+        ->name('inventario.vale.firmar-jefe');
 
     Route::get('/bitacora/{bitacora}/descargar', function (\App\Models\BitacoraReporte $bitacora) {
         $service = new \App\Services\BitacoraOverlayService();
@@ -137,8 +143,17 @@ Route::prefix('reportes')->name('portal.')->group(function () {
         Route::get('/documentos/{registro}/ver',         [PortalReportesController::class, 'showFirmarRegistro'])->name('documentos.ver');
         Route::post('/documentos/{registro}/firmar',     [PortalReportesController::class, 'firmarRegistro'])->name('documentos.firmar');
         Route::get('/documentos/{registro}/pdf',         [PortalReportesController::class, 'registroPdf'])->name('documentos.pdf');
+        Route::post('/vales/{vale}/confirmar',           [PortalReportesController::class, 'confirmarVale'])->name('vales.confirmar');
+        Route::get('/vales/{vale}/pdf',                  [PortalReportesController::class, 'portalValePdf'])->name('vales.pdf');
+        Route::get('/vales/{vale}/ver',                  [PortalReportesController::class, 'showFirmarVale'])->name('vales.ver');
+        Route::post('/vales/{vale}/firmar',              [PortalReportesController::class, 'firmarValePortal'])->name('vales.firmar');
     });
 });
+
+// Exportación PDF de auditoría (solo admins autenticados)
+Route::get('/admin/auditoria/exportar-pdf', [App\Http\Controllers\AuditoriaController::class, 'exportarPdf'])
+    ->name('admin.auditoria.pdf')
+    ->middleware('auth');
 
 // Historial general del inventario (PDF global con filtros)
 Route::get('/inventario/historial-general-pdf', [App\Http\Controllers\InventarioEquipoController::class, 'historialGeneralPdf'])

@@ -391,14 +391,8 @@
 
                 {{-- Modo: editar firma --}}
                 <div x-show="editing">
-                    {{-- Tabs --}}
-                    <div class="firma-tabs">
-                        <button type="button" class="firma-tab" :class="{ active: mode === 'draw' }" @click="mode = 'draw'">✏️ Dibujar</button>
-                        <button type="button" class="firma-tab" :class="{ active: mode === 'upload' }" @click="mode = 'upload'">🖼️ Subir imagen</button>
-                    </div>
-
                     {{-- Panel dibujar --}}
-                    <div x-show="mode === 'draw'">
+                    <div>
                         <div class="firma-canvas-wrap">
                             <canvas x-ref="canvas" width="720" height="240"
                                 @mousedown="startDraw($event)"
@@ -413,19 +407,6 @@
                         <button type="button" class="firma-clear" @click="clearCanvas()">Limpiar lienzo</button>
                     </div>
 
-                    {{-- Panel subir --}}
-                    <div x-show="mode === 'upload'">
-                        <label class="firma-upload-zone">
-                            <svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <span class="firma-upload-text"><strong>Clic para subir</strong> o arrastra un PNG/JPG</span>
-                            <input type="file" accept="image/png,image/jpeg,image/gif,image/webp"
-                                   style="display:none" @change="handleUpload($event)">
-                        </label>
-                    </div>
-
                     {{-- Botones listo / eliminar --}}
                     <div style="display:flex; align-items:center; margin-top:8px;">
                         <button type="button" class="firma-done-btn" @click="editing = false">Listo</button>
@@ -438,7 +419,7 @@
                 {{-- Hidden input + error --}}
                 <input type="hidden" name="firma" :value="dataUrl">
                 <p class="firma-error" :class="{ visible: firmaError }" id="firma-error-msg">
-                    Dibuja o sube tu firma para continuar.
+                    Dibuja tu firma para continuar.
                 </p>
                 @error('firma')<p class="error">{{ $message }}</p>@enderror
             </div>
@@ -532,17 +513,6 @@
                 const canvas = this.$refs.canvas;
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 this.dataUrl = '';
-            },
-
-            handleUpload(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    this.dataUrl = ev.target.result;
-                    this.editing = false;
-                };
-                reader.readAsDataURL(file);
             },
 
             removeSignature() {

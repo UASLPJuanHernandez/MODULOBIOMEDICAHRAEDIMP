@@ -38,6 +38,57 @@ class InventarioEquipoController extends Controller
         return $pdf->stream('vale-preview-' . $vale->id . '.pdf');
     }
 
+    public function valeDescargarPdf(ValeInventario $vale)
+    {
+        $pdf = Pdf::loadView('pdf.vale-inventario-preview', compact('vale'))
+            ->setPaper('letter', 'portrait');
+
+        $tipo = $vale->tipo === 'retiro' ? 'retiro' : 'entrega';
+        $inv  = $vale->numero_inventario
+            ? str_replace(['/', '\\', ' '], '-', $vale->numero_inventario)
+            : $vale->id;
+
+        return $pdf->download("vale-{$tipo}-{$inv}.pdf");
+    }
+
+    public function concretarVale(\Illuminate\Http\Request $request, ValeInventario $vale)
+    {
+        $request->validate([
+            'quien_recibe' => 'nullable|string|max:255',
+            'cargo_recibe' => 'nullable|string|max:255',
+            'observaciones'=> 'nullable|string|max:1000',
+            'firma_imagen' => 'nullable|string',
+            'jefe_id'      => 'required|exists:personal_reportante,id',
+        ]);
+
+        $vale->update([
+            'estado'        => 'en_firma',
+            'jefe_id'       => $request->jefe_id,
+            'quien_recibe'  => $request->quien_recibe,
+            'cargo_recibe'  => $request->cargo_recibe,
+            'observaciones' => $request->observaciones,
+            'firma_imagen'  => $request->firma_imagen,
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function firmarValeJefe(\Illuminate\Http\Request $request, ValeInventario $vale)
+    {
+        $personal = \Illuminate\Support\Facades\Auth::guard('personal')->user();
+
+        abort_unless($vale->jefe_id === $personal->id, 403);
+        abort_unless($vale->estado === 'en_firma', 400);
+
+        $vale->update([
+            'estado'        => 'culminado',
+            'firmado_at'    => now(),
+            'concretado_at' => now(),
+        ]);
+
+        return back()->with('vale_firmado', $vale->id);
+    }
+
     /**
      * Descarga un vale ya registrado (re-generado desde los datos cacheados).
      */

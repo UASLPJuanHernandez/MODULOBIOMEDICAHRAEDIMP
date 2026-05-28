@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\InventarioEquipoResource\Pages;
 
 use App\Filament\Resources\InventarioEquipoResource;
+use App\Services\ValeEntregaService;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Actions\Action as NotificationAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateInventarioEquipo extends CreateRecord
@@ -42,10 +45,25 @@ class CreateInventarioEquipo extends CreateRecord
 
     protected function afterCreate(): void
     {
+        $vale = (new ValeEntregaService())->registrarEntrega($this->record);
+
+        $notif = Notification::make()
+            ->title('Equipo registrado')
+            ->body('El vale de entrega está disponible en Documentos generados.')
+            ->success()
+            ->persistent()
+            ->actions([
+                NotificationAction::make('descargar')
+                    ->label('Descargar vale')
+                    ->url(route('inventario.vale.redescargar', $vale))
+                    ->openUrlInNewTab()
+                    ->button(),
+            ]);
+
         if (!empty($this->data['generar_vale'])) {
-            $url = route('inventario.equipo.vale-entrega', $this->record);
-            // Abrir la descarga en nueva pestaña; la navegación normal continúa
-            $this->js("window.open('" . addslashes($url) . "', '_blank')");
+            $this->js("window.open('" . addslashes(route('inventario.vale.redescargar', $vale)) . "', '_blank')");
         }
+
+        $notif->send();
     }
 }

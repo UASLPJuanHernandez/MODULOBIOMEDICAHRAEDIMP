@@ -47,7 +47,7 @@
     </div>
 
     {{-- TABS ─ segmented control con más separación --}}
-    <div style="background:#f1f5f9;border-radius:16px;padding:6px;display:inline-flex;gap:4px;margin-bottom:32px;">
+    <div style="background:#f1f5f9;border-radius:16px;padding:6px;display:inline-flex;gap:6px;margin-bottom:32px;">
         @foreach([
             ['personal', 'Personal'],
             ['resumen',  'Resumen general'],
@@ -60,7 +60,7 @@
             :style="tab === '{{ $key }}'
                 ? 'background:#fff;color:#111827;box-shadow:0 1px 5px rgba(0,0,0,.13);font-weight:600;'
                 : 'background:transparent;color:#64748b;'"
-            style="padding:11px 36px;border-radius:11px;border:none;font-size:14px;cursor:pointer;transition:all .18s;white-space:nowrap;"
+            style="padding:12px 52px;border-radius:11px;border:none;font-size:14px;cursor:pointer;transition:all .18s;white-space:nowrap;"
         >{{ $label }}</button>
         @endforeach
     </div>

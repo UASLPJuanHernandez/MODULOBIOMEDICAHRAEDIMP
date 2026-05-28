@@ -6,6 +6,43 @@ use App\Models\BitacoraReporte;
 use App\Models\FirmaSolicitud;
 use setasign\Fpdi\Fpdi;
 
+// Subclase que agrega Ellipse usando curvas Bézier (FPDF no lo incluye de base)
+class FpdiEx extends Fpdi
+{
+    public function Ellipse(float $cx, float $cy, float $rx, float $ry): void
+    {
+        $k     = $this->k;
+        $h     = $this->h;
+        $kappa = 0.5523;
+
+        $this->_out(sprintf(
+            '%.2F %.2F m '
+            . '%.2F %.2F %.2F %.2F %.2F %.2F c '
+            . '%.2F %.2F %.2F %.2F %.2F %.2F c '
+            . '%.2F %.2F %.2F %.2F %.2F %.2F c '
+            . '%.2F %.2F %.2F %.2F %.2F %.2F c S',
+            // punto de inicio (derecha)
+            ($cx + $rx) * $k,                    ($h - $cy) * $k,
+            // arco cuadrante superior-derecho
+            ($cx + $rx) * $k,                    ($h - ($cy - $kappa * $ry)) * $k,
+            ($cx + $kappa * $rx) * $k,           ($h - ($cy - $ry)) * $k,
+            $cx * $k,                            ($h - ($cy - $ry)) * $k,
+            // arco cuadrante superior-izquierdo
+            ($cx - $kappa * $rx) * $k,           ($h - ($cy - $ry)) * $k,
+            ($cx - $rx) * $k,                    ($h - ($cy - $kappa * $ry)) * $k,
+            ($cx - $rx) * $k,                    ($h - $cy) * $k,
+            // arco cuadrante inferior-izquierdo
+            ($cx - $rx) * $k,                    ($h - ($cy + $kappa * $ry)) * $k,
+            ($cx - $kappa * $rx) * $k,           ($h - ($cy + $ry)) * $k,
+            $cx * $k,                            ($h - ($cy + $ry)) * $k,
+            // arco cuadrante inferior-derecho
+            ($cx + $kappa * $rx) * $k,           ($h - ($cy + $ry)) * $k,
+            ($cx + $rx) * $k,                    ($h - ($cy + $kappa * $ry)) * $k,
+            ($cx + $rx) * $k,                    ($h - $cy) * $k
+        ));
+    }
+}
+
 class BitacoraOverlayService
 {
     private string $template;
@@ -34,17 +71,21 @@ class BitacoraOverlayService
         return $ruta;
     }
 
-    private function buildPdf(BitacoraReporte $bitacora): Fpdi
+    private function buildPdf(BitacoraReporte $bitacora): FpdiEx
     {
         $firmaSolicitud = FirmaSolicitud::where('reporte_pizarron_id', $bitacora->reporte_pizarron_id)
             ->where('estado', 'firmado')
             ->latest()
             ->first();
 
-        $pdf = new Fpdi();
-        $pdf->AddPage('P', 'A4');
+        // Dimensiones del formulario 144: 216.49 mm × 137.87 mm
+        $pdf = new FpdiEx();
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->AddPage('L', [137.87, 216.49]);
+        $pdf->SetAutoPageBreak(false);
         $pdf->setSourceFile($this->template);
-        $pdf->useTemplate($pdf->importPage(1));
+        $tplId = $pdf->importPage(1);
+        $pdf->useTemplate($tplId, 0, 0, 216.49, 137.87);
 
         $pdf->SetFont('Arial', '', 9);
         $pdf->SetTextColor(0, 0, 0);
@@ -52,75 +93,80 @@ class BitacoraOverlayService
         $fecha = \Carbon\Carbon::parse($bitacora->fecha_reporte)->format('d/m/Y');
         $hora  = substr($bitacora->hora_reporte ?? '', 0, 5) ?: '';
 
-        // ── Fila 1: Unidad / Descripción / Fecha ──────────────────────────
-        $this->escribir($pdf, 13,  47, 55,  $bitacora->area_departamento);
-        $this->escribir($pdf, 70,  47, 82,  $bitacora->nombre_dispositivo ?: '');
-        $this->escribir($pdf, 154, 47, 43,  $fecha . '  ' . $hora);
+        // ── Fila 1: Unidad / Descripción / Fecha y Hora  (y_top≈28, h≈22 → y=37) ─
+        $this->escribir($pdf,   1, 37,  64, $bitacora->area_departamento);
+        $this->escribir($pdf,  65, 37,  94, $bitacora->nombre_dispositivo ?: '');
+        $this->escribir($pdf, 159, 37,  56, $fecha . '  ' . $hora);
 
-        // ── Fila 2: Marca / Modelo / N° Serie / N° Control ────────────────
-        $this->escribir($pdf, 13,  73, 43,  $bitacora->marca ?: '');
-        $this->escribir($pdf, 59,  73, 43,  $bitacora->modelo ?: '');
-        $this->escribir($pdf, 107, 73, 43,  $bitacora->numero_serie ?: '');
+        // ── Fila 2: Marca / Modelo / N° Serie / N° Control ───────────────────
+        $this->escribir($pdf,   1, 49,  53, $bitacora->marca ?: '');
+        $this->escribir($pdf,  54, 49,  55, $bitacora->modelo ?: '');
+        $this->escribir($pdf, 109, 49,  55, $bitacora->numero_serie ?: '');
+        $this->escribir($pdf, 164, 49,  51, $bitacora->numero_control ?? '');
 
-        // ── Checkboxes SE SOLICITA ─────────────────────────────────────────
-        // Correctivo marcado por defecto (col 2)
-        $this->checkbox($pdf, 47,  99, true);   // CORRECTIVO ✓
-        $this->checkbox($pdf, 24,  99, false);  // PREVENTIVO
-        $this->checkbox($pdf, 70,  99, false);  // POR NO SER FUNCIONAL
-        $this->checkbox($pdf, 93,  99, false);  // INSERVIBLE
-        $this->checkbox($pdf, 116, 99, false);  // OBSOLETO
-        $this->checkbox($pdf, 140, 99, false);  // A DISPOSICIÓN
-        $this->checkbox($pdf, 163, 99, false);  // TRASPASO
-        $this->checkbox($pdf, 186, 99, false);  // OTRO
+        // ── Checkboxes SE SOLICITA — óvalo por columna ────────────────────
+        $esPreventivo = $bitacora->tipo_servicio === 'preventivo';
+        $esCorrectivo = $bitacora->tipo_servicio === 'correctivo';
 
-        // ── Justificación / Observaciones ─────────────────────────────────
-        $this->bloque($pdf, 13, 114, 184, $bitacora->mensaje_original ?? '', 40);
+        $this->ovalo($pdf,  22, 76, $esPreventivo, 18);  // PREVENTIVO
+        $this->ovalo($pdf,  62, 76, $esCorrectivo, 15);  // CORRECTIVO
+        $this->ovalo($pdf,  96, 73, false,          9);  // POR NO SER FUNCIONAL
+        $this->ovalo($pdf, 119, 76, false,          9);  // INSERVIBLE
+        $this->ovalo($pdf, 141, 76, false,          7);  // OBSOLETO
+        $this->ovalo($pdf, 160, 76, false,          6);  // A DISPOSICIÓN
+        $this->ovalo($pdf, 176, 76, false,          6);  // TRASPASO
+        $this->ovalo($pdf, 199, 76, false,          9);  // OTRO
+
+        // ── Justificación / Observaciones ────────────────────────────────
+        $this->bloque($pdf, 9, 82, 197, $bitacora->mensaje_original ?? '', 25);
 
         // ── Finalizado ────────────────────────────────────────────────────
         $finalizado = in_array($bitacora->resultado, ['satisfactoria', 'parcial']);
-        $this->checkbox($pdf, 166, 160, $finalizado);   // SI
-        $this->checkbox($pdf, 179, 160, !$finalizado);  // NO
+        $this->checkbox($pdf, 171, 110, $finalizado);
+        $this->checkbox($pdf, 184, 110, !$finalizado);
 
         if ($finalizado) {
-            $this->escribir($pdf, 148, 167, 45, $fecha . '  ' . $hora);
+            $this->escribir($pdf, 163, 113, 50, $fecha . '  ' . $hora);
         }
 
         // ── Firma: Solicita (izquierda) ───────────────────────────────────
-        $this->escribir($pdf, 13, 258, 85, $bitacora->nombre_personal);
+        $this->escribir($pdf, 12, 122, 88, $bitacora->nombre_personal);
 
         if ($firmaSolicitud?->firma_data) {
             $raw = $firmaSolicitud->firma_data;
 
             if (str_starts_with($raw, '{')) {
-                // Nuevo formato: {posicion: {page,x,y,w,h}, imagen: dataUrl}
                 $decoded  = json_decode($raw, true);
                 $imagen   = $decoded['imagen']   ?? '';
                 $posicion = $decoded['posicion'] ?? null;
 
                 if ($imagen) {
                     if ($posicion) {
-                        // Convertir porcentajes del canvas a mm en A4 (210×297 mm)
-                        $x = ($posicion['x'] / 100) * 210;
-                        $y = ($posicion['y'] / 100) * 297;
-                        $w = max(($posicion['w'] / 100) * 210, 10);
-                        $h = max(($posicion['h'] / 100) * 297,  5);
+                        // Convertir porcentajes del canvas a mm (216.49×137.87 mm)
+                        $x = ($posicion['x'] / 100) * 216.49;
+                        $y = ($posicion['y'] / 100) * 137.87;
+                        $w = max(($posicion['w'] / 100) * 216.49, 10);
+                        $h = max(($posicion['h'] / 100) * 137.87,  5);
+                        \Log::info('[BitacoraOverlay] firma solicita posicion', [
+                            'pct' => ['x' => $posicion['x'], 'y' => $posicion['y'], 'w' => $posicion['w'], 'h' => $posicion['h']],
+                            'mm'  => compact('x', 'y', 'w', 'h'),
+                        ]);
                         $this->imagen($pdf, $imagen, $x, $y, $w, $h);
                     } else {
-                        $this->imagen($pdf, $imagen, 20, 238, 60, 18);
+                        $this->imagen($pdf, $imagen, 12, 106, 55, 14);
                     }
                 }
             } else {
-                // Formato legado: data URL directo, posición fija
-                $this->imagen($pdf, $raw, 20, 238, 60, 18);
+                $this->imagen($pdf, $raw, 12, 106, 55, 14);
             }
         }
 
         // ── Firma: Recibe Biomédica (derecha) ─────────────────────────────
-        $this->escribir($pdf, 110, 258, 85, $bitacora->atiende_nombre ?: '');
+        $this->escribir($pdf, 118, 122, 88, $bitacora->atiende_nombre ?: '');
 
         if ($bitacora->firma_ingeniero) {
             $raw = $bitacora->firma_ingeniero;
-            $x = 120; $y = 238; $w = 60; $h = 18; // posición fija legado
+            $x = 118; $y = 106; $w = 55; $h = 14;
             $imagenData = $raw;
 
             if (str_starts_with($raw, '{')) {
@@ -128,11 +174,11 @@ class BitacoraOverlayService
                 $imagenData = $decoded['imagen'] ?? $raw;
                 $pos        = $decoded['posicion'] ?? null;
                 if ($pos) {
-                    // Convertir porcentajes del canvas a mm en A4 (210×297 mm)
-                    $x = ($pos['x'] / 100) * 210;
-                    $y = ($pos['y'] / 100) * 297;
-                    $w = max(($pos['w'] / 100) * 210, 10);
-                    $h = max(($pos['h'] / 100) * 297,  5);
+                    // Convertir porcentajes del canvas a mm (216.49×137.87 mm)
+                    $x = ($pos['x'] / 100) * 216.49;
+                    $y = ($pos['y'] / 100) * 137.87;
+                    $w = max(($pos['w'] / 100) * 216.49, 10);
+                    $h = max(($pos['h'] / 100) * 137.87,  5);
                 }
             }
 
@@ -142,10 +188,10 @@ class BitacoraOverlayService
         return $pdf;
     }
 
-    private function escribir(Fpdi $pdf, float $x, float $y, float $w, string $texto): void
+    private function escribir(Fpdi $pdf, float $x, float $y, float $w, string $texto, string $align = 'C'): void
     {
         $pdf->SetXY($x, $y);
-        $pdf->Cell($w, 5, $this->limpiar($texto), 0, 0, 'L');
+        $pdf->Cell($w, 5, $this->limpiar($texto), 0, 0, $align);
     }
 
     private function bloque(Fpdi $pdf, float $x, float $y, float $w, string $texto, float $h): void
@@ -154,12 +200,25 @@ class BitacoraOverlayService
         $pdf->MultiCell($w, 5, $this->limpiar($texto), 0, 'L');
     }
 
+    /** Palomita pequeña — sólo para los cuadros SI / NO de Finalizado. */
     private function checkbox(Fpdi $pdf, float $x, float $y, bool $marcado): void
     {
+        if (! $marcado) return;
         $pdf->SetFont('ZapfDingbats', '', 10);
         $pdf->SetXY($x - 2, $y - 2);
-        $pdf->Cell(6, 5, $marcado ? chr(52) : '', 0, 0, 'C');
+        $pdf->Cell(6, 5, chr(52), 0, 0, 'C');
         $pdf->SetFont('Arial', '', 9);
+    }
+
+    /** Óvalo encerrador — para opciones de Servicio y Baja Por. */
+    private function ovalo(FpdiEx $pdf, float $cx, float $cy, bool $marcado, float $rx): void
+    {
+        if (! $marcado) return;
+        $pdf->SetDrawColor(0, 0, 0);
+        $pdf->SetLineWidth(0.7);
+        // cy + 2.5 = centro vertical de la celda de 5 mm; ry cubre la fila de ≈12 mm
+        $pdf->Ellipse($cx, $cy + 2.5, $rx, 4.5);
+        $pdf->SetLineWidth(0.2);
     }
 
     private function imagen(Fpdi $pdf, string $dataUrl, float $x, float $y, float $w, float $h): void
@@ -195,16 +254,39 @@ class BitacoraOverlayService
                 $pngTmp = tempnam(sys_get_temp_dir(), 'firma_') . '.png';
                 file_put_contents($pngTmp, $im->getImageBlob());
                 $im->clear();
-                $pdf->Image($pngTmp, $x, $y, $w, $h, 'PNG');
+                // h=0 → FPDF calcula la altura proporcional automáticamente
+                $pdf->Image($pngTmp, $x, $y, $w, 0, 'PNG');
                 @unlink($pngTmp);
             } elseif ($ext !== 'svg') {
-                $pdf->Image($tmp, $x, $y, $w, $h, strtoupper($ext));
+                // h=0 → FPDF calcula la altura proporcional automáticamente
+                $info = @getimagesize($tmp);
+                \Log::info('[BitacoraOverlay] imagen', [
+                    'ext'   => $ext,
+                    'w_mm'  => $w,
+                    'h_mm'  => $h,
+                    'img_w' => $info[0] ?? 'N/A',
+                    'img_h' => $info[1] ?? 'N/A',
+                ]);
+                $pdf->Image($tmp, $x, $y, $w, 0, strtoupper($ext));
             }
-        } catch (\Throwable) {
-            // Si la imagen no se puede renderizar, se omite silenciosamente
+        } catch (\Throwable $e) {
+            \Log::error('[BitacoraOverlay] imagen error: ' . $e->getMessage());
         } finally {
             @unlink($tmp);
         }
+    }
+
+    /**
+     * Calcula la altura en mm que preserva el aspect ratio natural de la imagen.
+     * Si no se puede leer, devuelve $hFallback (el valor original).
+     */
+    private function alturaProporcionada(string $path, float $w, float $hFallback): float
+    {
+        $info = @getimagesize($path);
+        if ($info && $info[0] > 0 && $info[1] > 0) {
+            return $w * ($info[1] / $info[0]);
+        }
+        return $hFallback;
     }
 
     private function limpiar(string $texto): string

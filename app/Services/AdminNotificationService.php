@@ -28,9 +28,13 @@ class AdminNotificationService
             'user_id' => $user->id,
         ]);
 
-        // Broadcast solo si el emisor NO es admin (para no auto-spamear) – ajustable
+        // Broadcast solo si el emisor NO es admin y Reverb está disponible
         if (!$isAdmin) {
-            broadcast(new AdminNotificationEvent($title, $message, $action, $user, array_merge($data, ['notification_id' => $record->id])));
+            try {
+                broadcast(new AdminNotificationEvent($title, $message, $action, $user, array_merge($data, ['notification_id' => $record->id])));
+            } catch (\Exception $e) {
+                Log::warning('Broadcasting falló (¿Reverb no está corriendo?): ' . $e->getMessage());
+            }
         }
         Log::info('AdminNotification guardada y broadcast (condicional) ejecutado', ['id' => $record->id, 'broadcast' => !$isAdmin]);
     }

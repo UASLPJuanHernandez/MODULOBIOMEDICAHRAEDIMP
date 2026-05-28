@@ -104,7 +104,7 @@ PROMPT;
             ];
 
         } catch (\Exception $e) {
-            Log::error('GeminiService::extraerDatosReporte excepción', ['error' => $e->getMessage()]);
+            Log::error('GeminiService::extraerDatosReporte excepción', ['error' => $this->safeError($e)]);
             return $this->fallback($textoLibre, $servicioReportante);
         }
     }
@@ -232,10 +232,10 @@ PROMPT;
             ]);
 
         } catch (\Exception $e) {
-            Log::error('GeminiService::sugerirBitacora excepción', ['error' => $e->getMessage()]);
+            Log::error('GeminiService::sugerirBitacora excepción', ['error' => $this->safeError($e)]);
             return array_merge($base, [
                 '_fuente' => 'fallback',
-                '_aviso'  => 'Error de conexión con la IA: ' . $e->getMessage() . '. Se rellenaron los campos básicos.',
+                '_aviso'  => 'Error de conexión con la IA: ' . $this->safeError($e) . '. Se rellenaron los campos básicos.',
             ]);
         }
     }
@@ -243,6 +243,14 @@ PROMPT;
     // ──────────────────────────────────────────────────────────────
     // Helpers privados
     // ──────────────────────────────────────────────────────────────
+
+    private function safeError(\Throwable $e): string
+    {
+        if (empty($this->apiKey)) {
+            return $e->getMessage();
+        }
+        return str_replace($this->apiKey, '[REDACTED]', $e->getMessage());
+    }
 
     /**
      * Datos base siempre disponibles sin IA.
@@ -285,6 +293,128 @@ PROMPT;
         }
 
         return null;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Método 3: sugiere campos para un formulario de ConcretarVale
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * Pre-rellena el formulario de concretar vale usando IA.
+     * Siempre devuelve datos (nunca lanza excepción).
+     * Si la API no está disponible o falla, devuelve los datos existentes del vale.
+     */
+    public function sugerirVale(\App\Models\ValeInventario $vale): array
+    {
+        $base = $this->baseParaVale($vale);
+
+        if (empty($this->apiKey)) {
+            return array_merge($base, [
+                '_fuente' => 'fallback',
+                '_aviso'  => 'La clave de la API de IA no está configurada. Se usaron los datos del inventario.',
+            ]);
+        }
+
+        $areasLista  = implode(', ', self::AREAS);
+        $tipo        = $vale->tipo === 'retiro' ? 'Retiro (baja)' : 'Entrega (alta)';
+        $equipo      = $vale->equipo_nombre ?? '';
+        $area        = $vale->area ?? '';
+        $marca       = $vale->marca ?? '';
+        $modelo      = $vale->modelo ?? '';
+        $serie       = $vale->numero_serie ?? '';
+        $inventario  = $vale->numero_inventario ?? '';
+
+        $prompt = <<<PROMPT
+Eres un ingeniero biomédico completando la documentación de una transferencia de equipo médico.
+
+Datos del vale de inventario:
+- Tipo: {$tipo}
+- Equipo: "{$equipo}"
+- Área/Servicio actual: "{$area}"
+- Marca: "{$marca}"
+- Modelo: "{$modelo}"
+- No. Serie: "{$serie}"
+- No. Inventario: "{$inventario}"
+
+Áreas válidas del hospital (usa EXACTAMENTE una de estas o null):
+{$areasLista}
+
+Devuelve ÚNICAMENTE un JSON válido (sin markdown, sin texto extra):
+{
+  "equipo_nombre": "nombre técnico normalizado del equipo. Si ya es correcto, devuélvelo igual. Mejóralo si está incompleto.",
+  "area": "la opción de la lista que mejor corresponde al área indicada, null si ninguna coincide claramente",
+  "marca": "marca del equipo si está disponible o puede inferirse, null si no hay certeza",
+  "modelo": "modelo del equipo si está disponible, null si no hay certeza",
+  "observaciones": "una observación técnica breve relevante para este tipo de vale (máx. 1 oración)"
+}
+
+Reglas:
+- Solo mejora o normaliza lo que ya existe — no inventes datos nuevos
+- Para el área, busca la coincidencia exacta en la lista proporcionada
+- Las observaciones deben ser concisas y profesionales
+PROMPT;
+
+        try {
+            $response = Http::timeout(25)->post("{$this->endpoint}?key={$this->apiKey}", [
+                'contents'         => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.1, 'maxOutputTokens' => 512],
+            ]);
+
+            if (! $response->successful()) {
+                return array_merge($base, ['_fuente' => 'fallback', '_aviso' => null]);
+            }
+
+            $texto = trim($response->json('candidates.0.content.parts.0.text', ''));
+
+            // Extraer primer objeto JSON aunque haya texto o markdown alrededor
+            if (! preg_match('/\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}/us', $texto, $matches)) {
+                // Silently fall back — el formulario ya tiene datos del vale
+                return array_merge($base, ['_fuente' => 'fallback', '_aviso' => null]);
+            }
+
+            $datos = json_decode($matches[0], true);
+            if (! is_array($datos)) {
+                return array_merge($base, ['_fuente' => 'fallback', '_aviso' => null]);
+            }
+
+            $area = $datos['area'] ?? null;
+            if ($area && ! in_array($area, self::AREAS)) {
+                $area = $this->matchearArea($area) ?? $base['area'];
+            }
+
+            return array_merge($base, array_filter([
+                'equipo_nombre'  => ! empty($datos['equipo_nombre']) ? $datos['equipo_nombre'] : $base['equipo_nombre'],
+                'area'           => $area ?? $base['area'],
+                'marca'          => ! empty($datos['marca']) && strtolower($datos['marca']) !== 'null' ? $datos['marca'] : $base['marca'],
+                'modelo'         => ! empty($datos['modelo']) && strtolower($datos['modelo']) !== 'null' ? $datos['modelo'] : $base['modelo'],
+                'observaciones'  => ! empty($datos['observaciones']) ? $datos['observaciones'] : $base['observaciones'],
+            ], fn ($v) => $v !== null), [
+                '_fuente' => 'ia',
+                '_aviso'  => null,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('GeminiService::sugerirVale excepción', ['error' => $this->safeError($e)]);
+            return array_merge($base, ['_fuente' => 'fallback', '_aviso' => null]);
+        }
+    }
+
+    private function baseParaVale(\App\Models\ValeInventario $vale): array
+    {
+        return [
+            'tipo'            => $vale->tipo,
+            'equipo_nombre'   => $vale->equipo_nombre,
+            'numero_inventario' => $vale->numero_inventario,
+            'area'            => $this->matchearArea($vale->area ?? '') ?? $vale->area,
+            'marca'           => $vale->marca,
+            'modelo'          => $vale->modelo,
+            'numero_serie'    => $vale->numero_serie,
+            'unidad_medica'   => $vale->unidad_medica,
+            'usuario_nombre'  => $vale->usuario_nombre,
+            'quien_recibe'    => $vale->quien_recibe,
+            'cargo_recibe'    => $vale->cargo_recibe,
+            'observaciones'   => $vale->observaciones,
+        ];
     }
 
     /**

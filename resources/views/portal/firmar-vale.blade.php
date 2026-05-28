@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firmar reporte — HRAE</title>
+    <title>Firmar vale — HRAE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +35,6 @@
             position: relative;
         }
         .pdf-area.firma-colocada { cursor: default; }
-        .pdf-area iframe { width: 100%; height: 100%; border: none; display: block; }
 
         #pdf-pages {
             padding: 24px;
@@ -129,18 +128,8 @@
             $firmaDataUrl = 'data:image/svg+xml;charset=utf-8,' . $svgEnc;
         }
     }
-    $pdfUrl = $solicitud->reporte?->bitacora
-        ? route('portal.bitacora.pdf', $solicitud->reporte->bitacora)
-        : null;
-
-    // Extraer imagen de firma del JSON (nuevo formato) o usar el valor directo (legado)
-    $firmaImgMostrar = $solicitud->firma_data ?? '';
-    if ($firmaImgMostrar && str_starts_with($firmaImgMostrar, '{')) {
-        $fd = json_decode($firmaImgMostrar, true);
-        $firmaImgMostrar = $fd['imagen'] ?? '';
-    }
-
-    $yaFirmado = $solicitud->estado === 'firmado';
+    $pdfUrl   = route('portal.vales.pdf', $vale);
+    $yaFirmado = $vale->estado === 'culminado';
 @endphp
 
 <div id="place-hint">Haz clic en el documento para colocar tu firma</div>
@@ -153,7 +142,7 @@
         Volver
     </a>
     <div>
-        <p class="topbar-title">Firmar reporte</p>
+        <p class="topbar-title">Firmar vale</p>
         <p class="topbar-sub">{{ $personal->nombre }} — {{ $personal->area_jefe_servicio }}</p>
     </div>
 </div>
@@ -161,12 +150,10 @@
 <div class="main">
 
     {{-- ── PDF área ── --}}
-    <div class="pdf-area {{ $yaFirmado ? '' : '' }}" id="pdf-area">
-        @if($yaFirmado && $pdfUrl)
-        {{-- Documento ya firmado: mostrar el PDF directamente (con firma incrustada) --}}
-        <iframe src="{{ $pdfUrl }}" title="Documento firmado"></iframe>
-        @elseif($pdfUrl)
-        {{-- Pendiente de firmar: pdf.js interactivo --}}
+    <div class="pdf-area" id="pdf-area">
+        @if($yaFirmado)
+        <iframe src="{{ $pdfUrl }}" title="Documento firmado" style="width:100%;height:100%;border:none;display:block;"></iframe>
+        @else
         <div id="pdf-pages">
             <p style="color:rgba(255,255,255,.6);font-size:14px;">Cargando documento…</p>
         </div>
@@ -175,10 +162,6 @@
             <img src="{{ $firmaDataUrl }}" alt="Tu firma">
             <div id="resize-handle"></div>
         </div>
-        @else
-        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#d1d5db;font-size:14px;">
-            El PDF estará disponible en breve.
-        </div>
         @endif
     </div>
 
@@ -186,22 +169,28 @@
     <div class="sidebar">
 
         <div class="sidebar-section">
-            <p class="sidebar-label">Reporte</p>
+            <p class="sidebar-label">Vale</p>
+            <div class="info-row">
+                <span class="info-key">Tipo</span>
+                <span class="info-val">{{ $vale->tipo === 'entrega' ? 'Vale de Entrega' : 'Vale de Retiro' }}</span>
+            </div>
             <div class="info-row">
                 <span class="info-key">Equipo</span>
-                <span class="info-val">{{ $solicitud->reporte?->equipo ?: '—' }}</span>
+                <span class="info-val">{{ $vale->equipo_nombre ?: '—' }}</span>
             </div>
+            @if($vale->numero_inventario)
+            <div class="info-row">
+                <span class="info-key">No. Inventario</span>
+                <span class="info-val">{{ $vale->numero_inventario }}</span>
+            </div>
+            @endif
             <div class="info-row">
                 <span class="info-key">Área</span>
-                <span class="info-val">{{ $solicitud->reporte?->ubicacion ?: '—' }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-key">Descripción</span>
-                <span class="info-val" style="font-weight:400;font-size:12px;color:#374151;">{{ Str::limit($solicitud->reporte?->descripcion, 100) }}</span>
+                <span class="info-val">{{ $vale->area ?: '—' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-key">Recibido</span>
-                <span class="info-val">{{ $solicitud->created_at->format('d/m/Y H:i') }}</span>
+                <span class="info-val">{{ $vale->created_at->format('d/m/Y H:i') }}</span>
             </div>
         </div>
 
@@ -223,26 +212,19 @@
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Reporte firmado
+                Vale firmado
             </div>
             <p style="font-size:12px;color:#9ca3af;margin-top:8px;text-align:center;">
-                Firmado el {{ $solicitud->firmado_at?->format('d/m/Y H:i') }}
+                Firmado el {{ $vale->firmado_at?->format('d/m/Y H:i') }}
             </p>
-            @if($pdfUrl)
             <a href="{{ $pdfUrl }}" target="_blank" download
                style="display:block;margin-top:12px;padding:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;text-align:center;font-size:13px;font-weight:600;color:#16a34a;text-decoration:none;">
                 Descargar PDF
             </a>
-            @endif
 
             @elseif(!$firmaDataUrl)
             <p style="font-size:13px;color:#ef4444;font-weight:600;">
                 No puedes firmar porque no tienes firma registrada. Actualiza tu perfil.
-            </p>
-
-            @elseif(!$pdfUrl)
-            <p style="font-size:13px;color:#f59e0b;font-weight:600;">
-                El PDF del reporte aún no está disponible. Intenta más tarde.
             </p>
 
             @else
@@ -261,7 +243,7 @@
             </div>
 
             <div style="margin-top:16px;">
-                <form id="firma-form" method="POST" action="{{ route('portal.firmar', $solicitud) }}">
+                <form id="firma-form" method="POST" action="{{ route('portal.vales.firmar', $vale) }}">
                     @csrf
                     <input type="hidden" name="firma_data" value="{{ $firmaDataUrl }}">
                     <input type="hidden" name="firma_posicion" id="firma-posicion-input" value="">
@@ -281,7 +263,7 @@
     </div>
 </div>
 
-@if($pdfUrl && !$yaFirmado && $firmaDataUrl)
+@if(!$yaFirmado && $firmaDataUrl)
 <script>
 (function () {
     var WORKER_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -301,8 +283,7 @@
     var firmaForm    = document.getElementById('firma-form');
     var resizeHandle = document.getElementById('resize-handle');
 
-    var firmaColocada  = false;
-    var manualResized  = false;
+    var firmaColocada = false;
     var isDragging = false, isResizing = false;
     var dragStartX, dragStartY, dragStartLeft, dragStartTop;
     var resStartX, resStartY, resStartW, resStartH;
@@ -363,24 +344,9 @@
         });
         if (!bestPg) return;
 
-        // Tamaño inicial idéntico al overlay del ingeniero: max 20 % del ancho de página,
-        // con la altura proporcional a las dimensiones naturales de la imagen.
-        if (!manualResized) {
-            var pgR  = bestPg.getBoundingClientRect();
-            var fImg = firmaDrag.querySelector('img');
-            var natW = (fImg && fImg.naturalWidth)  || 200;
-            var natH = (fImg && fImg.naturalHeight) || 70;
-            var wPctN = Math.min(20, natW / pgR.width  * 100);
-            var hPctN = wPctN * (natH / natW) * (pgR.width / pgR.height);
-            firmaDrag.style.width  = (wPctN / 100 * pgR.width)  + 'px';
-            firmaDrag.style.height = (hPctN / 100 * pgR.height) + 'px';
-        }
-
         var pagesRect   = pdfPages.getBoundingClientRect();
-        var fW = parseFloat(firmaDrag.style.width)  || 148;
-        var fH = parseFloat(firmaDrag.style.height) || 63;
-        var leftInPages = (clickX - pagesRect.left) - fW / 2;
-        var topInPages  = (clickY - pagesRect.top)  - fH / 2;
+        var leftInPages = (clickX - pagesRect.left) - (firmaDrag.offsetWidth  / 2);
+        var topInPages  = (clickY - pagesRect.top)  - (firmaDrag.offsetHeight / 2);
 
         firmaDrag.style.display = 'block';
         firmaDrag.style.left    = leftInPages + 'px';
@@ -442,7 +408,7 @@
     /* ── Resize ── */
     resizeHandle.addEventListener('mousedown', function (e) {
         e.stopPropagation(); e.preventDefault();
-        isResizing = true; manualResized = true;
+        isResizing = true;
         resStartX  = e.clientX; resStartY  = e.clientY;
         resStartW  = firmaDrag.offsetWidth; resStartH = firmaDrag.offsetHeight;
     });
@@ -450,7 +416,7 @@
     resizeHandle.addEventListener('touchstart', function (e) {
         e.stopPropagation();
         var t = e.touches[0];
-        isResizing = true; manualResized = true;
+        isResizing = true;
         resStartX  = t.clientX; resStartY  = t.clientY;
         resStartW  = firmaDrag.offsetWidth; resStartH = firmaDrag.offsetHeight;
     }, { passive: false });

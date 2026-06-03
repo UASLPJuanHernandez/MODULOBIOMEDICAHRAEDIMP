@@ -62,13 +62,15 @@
             });
     }
 
-    /* ===== Renderizar todas las páginas ===== */
+    /* ===== Renderizar todas las páginas (secuencialmente para garantizar orden) ===== */
     function _renderTodas(wrap) {
-        var promises = [];
+        var chain = Promise.resolve();
         for (var i = 1; i <= _pdf.numPages; i++) {
-            promises.push(_renderPagina(i, wrap));
+            (function (num) {
+                chain = chain.then(function () { return _renderPagina(num, wrap); });
+            })(i);
         }
-        Promise.all(promises).then(_renderTodosCampos);
+        chain.then(_renderTodosCampos);
     }
 
     function _renderPagina(num, wrap) {
@@ -402,9 +404,53 @@
     }
 
     function _onDragEnd() {
+        if (_drag) {
+            /* Re-parentar si el campo cruzó a otra página */
+            var el    = _drag.el;
+            var campo = _drag.campo;
+            var r     = el.getBoundingClientRect();
+            var cx    = (r.left + r.right)  / 2;
+            var cy    = (r.top  + r.bottom) / 2;
+
+            document.querySelectorAll('.pdf-pw').forEach(function (pw) {
+                var pr = pw.getBoundingClientRect();
+                if (cx >= pr.left && cx <= pr.right && cy >= pr.top && cy <= pr.bottom) {
+                    var newPage = parseInt(pw.dataset.page, 10);
+                    if (newPage !== campo.page) {
+                        var dims  = (pw.dataset.pw || '0,0').split(',');
+                        var pwW   = parseFloat(dims[0]) || pw.offsetWidth;
+                        var pwH   = parseFloat(dims[1]) || pw.offsetHeight;
+                        var newXpx = Math.max(0, r.left - pr.left);
+                        var newYpx = Math.max(0, r.top  - pr.top);
+
+                        campo.page    = newPage;
+                        campo.x       = newXpx / pwW * 100;
+                        campo.y       = newYpx / pwH * 100;
+                        el.style.left = newXpx + 'px';
+                        el.style.top  = newYpx + 'px';
+
+                        var newOv = pw.querySelector('.pdf-ov');
+                        if (newOv) newOv.appendChild(el);
+                    }
+                }
+            });
+        }
         _drag = null;
         document.removeEventListener('mousemove', _onDragMove);
         document.removeEventListener('mouseup',   _onDragEnd);
+    }
+
+    /* Devuelve la página .pdf-pw cuyo centro está más cerca del centro del viewport */
+    function _paginaActual() {
+        var mid  = window.innerHeight / 2;
+        var best = 1;
+        var dist = Infinity;
+        document.querySelectorAll('.pdf-pw').forEach(function (pw) {
+            var r  = pw.getBoundingClientRect();
+            var d  = Math.abs((r.top + r.bottom) / 2 - mid);
+            if (d < dist) { dist = d; best = parseInt(pw.dataset.page, 10) || 1; }
+        });
+        return best;
     }
 
     /* ===== Redimensión (trabaja en px) ===== */
@@ -601,8 +647,10 @@
                     el.style.minHeight  = (hPct / 100 * pwH) + 'px';
                 }
             } else {
-                /* nuevo campo firma: calcular tamaño según imagen recortada */
-                var pw1   = document.querySelector('.pdf-pw[data-page="1"]');
+                /* nuevo campo firma: usar página actualmente visible */
+                var pgF   = _paginaActual();
+                var pw1   = document.querySelector('.pdf-pw[data-page="' + pgF + '"]') ||
+                            document.querySelector('.pdf-pw[data-page="1"]');
                 var pwW1  = 800, pwH1 = 1132;
                 if (pw1) {
                     var d = (pw1.dataset.pw || '800,1132').split(',');
@@ -615,7 +663,7 @@
                 var id = 'f' + _nextId++;
                 var c  = {
                     id:    id,
-                    page:  1,
+                    page:  pgF,
                     x:     5,
                     y:     5,
                     w:     wPct1,
@@ -767,7 +815,10 @@
                     el.style.minHeight = (hPct / 100 * pwH) + 'px';
                 }
             } else {
-                var pw1  = document.querySelector('.pdf-pw[data-page="1"]');
+                /* nuevo campo firma_jefe: usar página actualmente visible */
+                var pgJ  = _paginaActual();
+                var pw1  = document.querySelector('.pdf-pw[data-page="' + pgJ + '"]') ||
+                           document.querySelector('.pdf-pw[data-page="1"]');
                 var pwW1 = 800, pwH1 = 1132;
                 if (pw1) {
                     var d = (pw1.dataset.pw || '800,1132').split(',');
@@ -780,7 +831,7 @@
                 var id = 'f' + _nextId++;
                 var c  = {
                     id:    id,
-                    page:  1,
+                    page:  pgJ,
                     x:     5,
                     y:     5,
                     w:     wPct1,

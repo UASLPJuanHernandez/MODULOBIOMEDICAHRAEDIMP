@@ -19,8 +19,8 @@ class Formatos extends Page
 
     protected static string $view          = 'filament.pages.formatos';
     protected static ?string $navigationIcon  = 'heroicon-o-document-text';
-    protected static ?string $navigationLabel = 'Mantenimientos y procesos';
-    protected static ?string $title           = 'Mantenimientos y procesos';
+    protected static ?string $navigationLabel = 'Formatos';
+    protected static ?string $title           = 'Formatos';
     protected static ?int    $navigationSort  = -1;
 
     public function getMaxContentWidth(): MaxWidth|string|null
@@ -226,6 +226,23 @@ class Formatos extends Page
         $data    = json_decode($registro->contenido_editado ?? '{}', true) ?? [];
         $campos  = $data['campos']  ?? [];
         $valores = $data['valores'] ?? [];
+
+        if ($registro->firma_jefe_data) {
+            $fj = json_decode($registro->firma_jefe_data, true);
+            if ($fj && !empty($fj['firma_svg'])) {
+                $campos[] = [
+                    'id'    => '__firma_jefe__',
+                    'page'  => (int) ($fj['page'] ?? 1),
+                    'x'     => (float) ($fj['x'] ?? 0),
+                    'y'     => (float) ($fj['y'] ?? 0),
+                    'w'     => (float) ($fj['w'] ?? 18),
+                    'h'     => (float) ($fj['h'] ?? 8),
+                    'label' => 'Firma jefe',
+                    'tipo'  => 'firma_jefe',
+                ];
+                $valores['__firma_jefe__'] = $fj['firma_svg'];
+            }
+        }
 
         $this->dispatch('fmt:ver-pdf',
             url:     route('formato.archivo', $registro->formato),
@@ -435,6 +452,23 @@ class Formatos extends Page
         $data    = json_decode($registro->contenido_editado ?? '{}', true) ?? [];
         $campos  = $data['campos']  ?? [];
         $valores = $data['valores'] ?? [];
+
+        if ($registro->firma_jefe_data) {
+            $fj = json_decode($registro->firma_jefe_data, true);
+            if ($fj && !empty($fj['firma_svg'])) {
+                $campos[] = [
+                    'id'    => '__firma_jefe__',
+                    'page'  => (int) ($fj['page'] ?? 1),
+                    'x'     => (float) ($fj['x'] ?? 0),
+                    'y'     => (float) ($fj['y'] ?? 0),
+                    'w'     => (float) ($fj['w'] ?? 18),
+                    'h'     => (float) ($fj['h'] ?? 8),
+                    'label' => 'Firma jefe',
+                    'tipo'  => 'firma_jefe',
+                ];
+                $valores['__firma_jefe__'] = $fj['firma_svg'];
+            }
+        }
 
         $this->dispatch('fmt:ver-mantenimiento',
             url:     route('formato.archivo', $registro->formato),

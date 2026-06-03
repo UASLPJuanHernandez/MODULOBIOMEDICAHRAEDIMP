@@ -295,7 +295,7 @@
 (function () {
     var WORKER_SRC  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     var SCALE       = 1.5;
-    var PDF_URL     = @json(route('portal.documentos.pdf', $registro));
+    var PDF_URL     = @json(route('portal.documentos.template', $registro));
     var CAMPOS      = @json($campos);
     var VALORES     = @json((object)$valores);
     var FIRMA_SRC   = @json($firmaDataUrl);
@@ -316,16 +316,17 @@
     var isDragging     = false;
     var dragStartX, dragStartY, dragStartLeft, dragStartTop;
 
-    /* ── Cargar y renderizar PDF ── */
+    /* ── Cargar y renderizar PDF (páginas secuenciales para garantizar orden correcto) ── */
     pdfjsLib.getDocument({ url: PDF_URL, withCredentials: true }).promise
         .then(function (doc) {
             pdfPages.innerHTML = '';
-
-            var renders = [];
+            var chain = Promise.resolve();
             for (var i = 1; i <= doc.numPages; i++) {
-                renders.push(renderPage(doc, i));
+                (function (num) {
+                    chain = chain.then(function () { return renderPage(doc, num); });
+                })(i);
             }
-            return Promise.all(renders);
+            return chain;
         })
         .then(function () {
             /* Después de renderizar: mover firma-drag dentro de pdfPages para que
@@ -368,34 +369,38 @@
     }
 
     function renderCamposPagina(pg, pageNum, pwW, pwH) {
+        // PDF es el template crudo — todos los valores se renderizan aquí (igual que el visor admin).
         CAMPOS.forEach(function (c) {
             if (parseInt(c.page) !== pageNum) return;
 
             var xPx = c.x / 100 * pwW;
-            var yPx = (c.y / 100 * pwH) + 4;  /* +4 px offset como en el visor admin */
+            var yPx = (c.y / 100 * pwH) + 4;
             var wPx = c.w / 100 * pwW;
             var hPx = Math.max(c.h / 100 * pwH, 24);
 
             var esFirma = c.tipo === 'firma' || c.tipo === 'firma_jefe';
             var valor   = (VALORES && VALORES[c.id]) ? VALORES[c.id] : '';
 
-            var el = document.createElement(esFirma ? 'img' : 'div');
-            el.style.cssText =
-                'position:absolute;' +
-                'left:' + xPx + 'px;top:' + yPx + 'px;' +
-                'width:' + wPx + 'px;min-height:' + hPx + 'px;';
-
             if (esFirma) {
-                el.className = 'pdf-campo-firma';
-                el.src       = valor || '';
-                el.style.width  = wPx + 'px';
-                el.style.height = hPx + 'px';
+                if (!valor) return;
+                var img = document.createElement('img');
+                img.src = valor;
+                img.style.cssText =
+                    'position:absolute;left:' + xPx + 'px;top:' + yPx + 'px;' +
+                    'width:' + wPx + 'px;height:' + hPx + 'px;' +
+                    'object-fit:contain;mix-blend-mode:multiply;pointer-events:none;';
+                pg.querySelector('.campo-overlay').appendChild(img);
             } else {
-                el.className   = 'pdf-campo-val';
-                el.textContent = valor || '';
+                var div = document.createElement('div');
+                div.style.cssText =
+                    'position:absolute;left:' + xPx + 'px;top:' + yPx + 'px;' +
+                    'width:' + wPx + 'px;min-height:' + hPx + 'px;' +
+                    'font-size:11pt;color:#111;padding:2px 4px;' +
+                    'white-space:pre-wrap;word-break:break-word;line-height:1.4;' +
+                    'pointer-events:none;box-sizing:border-box;';
+                div.textContent = valor;
+                pg.querySelector('.campo-overlay').appendChild(div);
             }
-
-            pg.querySelector('.campo-overlay').appendChild(el);
         });
     }
 

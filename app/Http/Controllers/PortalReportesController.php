@@ -40,14 +40,6 @@ class PortalReportesController extends Controller
             return back()->withErrors(['numero_empleado' => 'Número de empleado o contraseña incorrectos.'])->withInput();
         }
 
-        if ($personal->estado === 'pendiente') {
-            return back()->withErrors(['numero_empleado' => 'Tu registro está pendiente de aprobación. Te avisaremos cuando esté activo.'])->withInput();
-        }
-
-        if ($personal->estado === 'rechazado') {
-            return back()->withErrors(['numero_empleado' => 'Tu solicitud de registro fue rechazada. Contacta al departamento de Ingeniería Biomédica.'])->withInput();
-        }
-
         Auth::guard('personal')->login($personal, $request->boolean('remember'));
 
         AuditService::log('acceso', "Inicio de sesión en /reportes — {$personal->nombre}", [
@@ -72,14 +64,13 @@ class PortalReportesController extends Controller
 
     public function showRegistro()
     {
-        if (Auth::guard('personal')->check()) {
-            return redirect()->route('portal.reportes.form');
-        }
+        abort_unless(Auth::check(), 403);
         return view('portal.registro');
     }
 
     public function registro(Request $request)
     {
+        abort_unless(Auth::check(), 403);
         $esJefe = $request->boolean('es_jefe_servicio');
 
         $request->validate([
@@ -113,7 +104,7 @@ class PortalReportesController extends Controller
             'numero_empleado'    => $request->numero_empleado,
             'servicio'           => $request->servicio,
             'password'           => Hash::make($request->password),
-            'estado'             => 'pendiente',
+            'estado'             => 'aprobado',
             'firma'              => $request->firma,
             'es_jefe_servicio'   => $esJefe,
             'area_jefe_servicio' => $esJefe ? $request->area_jefe_servicio : null,
@@ -121,7 +112,8 @@ class PortalReportesController extends Controller
             'horario_fin'        => $request->horario_fin,
         ]);
 
-        return view('portal.registro-enviado');
+        return redirect('/admin/personal-reportantes')
+            ->with('success', 'Usuario registrado correctamente.');
     }
 
     // ── Formulario de reporte ──────────────────────────────────────────────
@@ -379,8 +371,18 @@ class PortalReportesController extends Controller
 
         $registro->load('formato');
         $pdf = (new \App\Services\RegistroOverlayService())->stream($registro);
+        return response($pdf, 200, ['Content-Type' => 'application/pdf', 'Cache-Control' => 'no-cache']);
+    }
 
-        return response($pdf, 200, ['Content-Type' => 'application/pdf']);
+    public function registroPdfTemplate(Registro $registro)
+    {
+        $personal = Auth::guard('personal')->user();
+        abort_unless($registro->jefe_id === $personal->id, 403);
+        $formato = $registro->formato;
+        abort_unless($formato && Storage::disk('local')->exists($formato->archivo_path), 404);
+
+        $path = Storage::disk('local')->path($formato->archivo_path);
+        return response()->file($path, ['Content-Type' => 'application/pdf', 'Cache-Control' => 'no-cache']);
     }
 
     public function portalBitacoraPdf(\App\Models\BitacoraReporte $bitacora)

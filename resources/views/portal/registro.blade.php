@@ -226,9 +226,6 @@
             <p>Portal de Reportes — HRAE</p>
         </div>
 
-        <div class="info-box">
-            Tu registro será revisado por el departamento de Ingeniería Biomédica antes de activarse.
-        </div>
 
         @if($errors->any())
             <div class="error-box">{{ $errors->first() }}</div>
@@ -424,14 +421,8 @@
                 @error('firma')<p class="error">{{ $message }}</p>@enderror
             </div>
 
-            <button type="submit" class="btn">Enviar solicitud</button>
+            <button type="submit" class="btn">Registrar nuevo reportante</button>
         </form>
-
-        <hr class="divider">
-
-        <div class="footer-link">
-            ¿Ya tienes acceso? <a href="{{ route('portal.login') }}">Inicia sesión</a>
-        </div>
     </div>
 
     <script>

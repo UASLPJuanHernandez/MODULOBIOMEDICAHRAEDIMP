@@ -143,8 +143,9 @@ Route::get('/inventario-equipo/{equipo}/historial-pdf', [App\Http\Controllers\In
 // ── Portal de Reportes (personal del hospital) ────────────────────────────
 Route::prefix('reportes')->name('portal.')->group(function () {
     // Rutas públicas (login y registro)
-    Route::get('/',         [PortalReportesController::class, 'showLogin'])->name('login');
-    Route::post('/login',   [PortalReportesController::class, 'login'])->name('login.submit');
+    Route::get('/',      [PortalReportesController::class, 'showLogin'])->name('login');
+    Route::get('/login', fn() => redirect('/reportes'));
+    Route::post('/login',[PortalReportesController::class, 'login'])->name('login.submit');
     Route::get('/registro', [PortalReportesController::class, 'showRegistro'])->name('registro');
     Route::post('/registro',[PortalReportesController::class, 'registro'])->name('registro.submit');
     Route::post('/logout',  [PortalReportesController::class, 'logout'])->name('logout');
@@ -162,6 +163,7 @@ Route::prefix('reportes')->name('portal.')->group(function () {
         Route::get('/documentos/{registro}/ver',         [PortalReportesController::class, 'showFirmarRegistro'])->name('documentos.ver');
         Route::post('/documentos/{registro}/firmar',     [PortalReportesController::class, 'firmarRegistro'])->name('documentos.firmar');
         Route::get('/documentos/{registro}/pdf',         [PortalReportesController::class, 'registroPdf'])->name('documentos.pdf');
+        Route::get('/documentos/{registro}/template',   [PortalReportesController::class, 'registroPdfTemplate'])->name('documentos.template');
         Route::post('/vales/{vale}/confirmar',           [PortalReportesController::class, 'confirmarVale'])->name('vales.confirmar');
         Route::get('/vales/{vale}/pdf',                  [PortalReportesController::class, 'portalValePdf'])->name('vales.pdf');
         Route::get('/vales/{vale}/ver',                  [PortalReportesController::class, 'showFirmarVale'])->name('vales.ver');

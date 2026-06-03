@@ -397,6 +397,25 @@ class DocumentosGenerados extends Page
         $campos  = $data['campos']  ?? [];
         $valores = $data['valores'] ?? [];
 
+        // Si el documento fue firmado en el portal, agregar la firma como campo sintético
+        if ($registro->firma_jefe_data) {
+            $fj = json_decode($registro->firma_jefe_data, true);
+            if ($fj && !empty($fj['firma_svg'])) {
+                $campoFirma = [
+                    'id'    => '__firma_jefe__',
+                    'page'  => (int) ($fj['page'] ?? 1),
+                    'x'     => (float) ($fj['x'] ?? 0),
+                    'y'     => (float) ($fj['y'] ?? 0),
+                    'w'     => (float) ($fj['w'] ?? 18),
+                    'h'     => (float) ($fj['h'] ?? 8),
+                    'label' => 'Firma jefe',
+                    'tipo'  => 'firma_jefe',
+                ];
+                $campos[] = $campoFirma;
+                $valores['__firma_jefe__'] = $fj['firma_svg'];
+            }
+        }
+
         $this->registroViendoId = $registroId;
         $this->vistaDoc         = 'ver';
 

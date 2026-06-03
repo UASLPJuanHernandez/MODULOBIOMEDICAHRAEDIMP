@@ -130,11 +130,6 @@
             <button type="submit" class="btn">Entrar</button>
         </form>
 
-        <hr class="divider">
-
-        <div class="footer-link">
-            ¿Primera vez? <a href="{{ route('portal.registro') }}">Regístrate aquí</a>
-        </div>
     </div>
 </body>
 </html>

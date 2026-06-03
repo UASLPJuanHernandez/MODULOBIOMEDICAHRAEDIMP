@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Consumible;
 use App\Models\InventarioEquipo;
 use App\Models\ValeInventario;
 use Carbon\Carbon;
@@ -54,6 +55,28 @@ class ValeEntregaService
     public function registrarEntrega(InventarioEquipo $equipo): ValeInventario
     {
         return $this->registrarVale('entrega', $equipo);
+    }
+
+    /**
+     * Registra vale de entrega para un consumible y devuelve el modelo creado.
+     */
+    public function registrarEntregaConsumible(Consumible $consumible, array $extra = []): ValeInventario
+    {
+        return ValeInventario::create([
+            'tipo'                 => 'entrega',
+            'inventario_equipo_id' => null,
+            'equipo_nombre'        => $consumible->nombre . ($consumible->descripcion ? ' — ' . $consumible->descripcion : ''),
+            'marca'                => $consumible->marca ?? '',
+            'modelo'               => $consumible->referencia ?? '',
+            'numero_inventario'    => $consumible->referencia ?? '',
+            'numero_serie'         => '',
+            'area'                 => $extra['area'] ?? '',
+            'unidad_medica'        => $extra['area'] ?? '',
+            'quien_recibe'         => $extra['quien_recibe'] ?? '',
+            'cargo_recibe'         => $extra['cargo_recibe'] ?? '',
+            'usuario_id'           => Auth::id(),
+            'usuario_nombre'       => Auth::user()?->name ?? 'Sistema',
+        ]);
     }
 
     /**

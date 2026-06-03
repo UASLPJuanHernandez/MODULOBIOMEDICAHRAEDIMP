@@ -171,6 +171,30 @@ Route::prefix('reportes')->name('portal.')->group(function () {
     });
 });
 
+// PDF de vale de consumible
+Route::get('/admin/consumible-vale-pdf/{vale}', function (\App\Models\ValeInventario $vale) {
+    abort_unless(auth()->check() && $vale->consumible_id, 403);
+    $c   = $vale->consumible;
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.consumible-vale', [
+        'fecha'          => $vale->created_at->format('d/m/Y'),
+        'nombre'         => $vale->equipo_nombre,
+        'descripcion'    => $c?->descripcion ?? '',
+        'marca'          => $vale->marca      ?? '',
+        'referencia'     => $vale->modelo     ?? '',
+        'cantidad'       => $vale->cantidad_entregada ?? '—',
+        'nombre_entrega' => $vale->usuario_nombre ?? '',
+        'cargo_entrega'  => '',
+        'nombre_recibe'  => $vale->quien_recibe  ?? '',
+        'cargo_recibe'   => $vale->cargo_recibe  ?? '',
+        'observaciones'  => $vale->observaciones ?? '',
+    ])->setPaper('letter', 'portrait');
+    return response()->streamDownload(
+        fn () => print($pdf->output()),
+        'Vale_Consumible_' . $vale->id . '.pdf',
+        ['Content-Type' => 'application/pdf']
+    );
+})->name('admin.consumible.vale.pdf')->middleware('auth');
+
 // Exportación PDF de estadísticas de ingeniería
 Route::get('/admin/estadisticas-ingenieria/exportar-pdf', [App\Http\Controllers\EstadisticasIngenieriaController::class, 'exportarPdf'])
     ->name('admin.estadisticas-ingenieria.pdf')

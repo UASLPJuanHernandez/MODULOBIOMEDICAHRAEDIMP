@@ -14,6 +14,8 @@ class ValeInventario extends Model
         'estado',
         'jefe_id',
         'inventario_equipo_id',
+        'consumible_id',
+        'cantidad_entregada',
         'numero_inventario',
         'equipo_nombre',
         'area',
@@ -42,6 +44,11 @@ class ValeInventario extends Model
     public function inventarioEquipo(): BelongsTo
     {
         return $this->belongsTo(InventarioEquipo::class, 'inventario_equipo_id');
+    }
+
+    public function consumible(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Consumible::class, 'consumible_id');
     }
 
     public function usuario(): BelongsTo

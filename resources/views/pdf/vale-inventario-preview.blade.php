@@ -142,6 +142,9 @@
             @if(!empty($eq['unidad_medica']))
             <tr><td class="label-col">Unidad médica</td><td>{{ $eq['unidad_medica'] }}</td></tr>
             @endif
+            @if($vale->cantidad_entregada)
+            <tr><td class="label-col">Cantidad entregada</td><td>{{ $vale->cantidad_entregada }}</td></tr>
+            @endif
         </tbody>
     </table>
     </div>

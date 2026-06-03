@@ -102,21 +102,45 @@ class AuditoriaController extends Controller
             ->latest()
             ->get(['id','nombre','servicio','es_jefe_servicio','area_jefe_servicio','estado','created_at']);
 
+        // ── Totales de registros y reportes (para stats) ───────────────────────
+        $totalRegistrosPeriodo = Registro::query()
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
+        $totalReportesPeriodo = FirmaSolicitud::query()
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
         // ── Stats ─────────────────────────────────────────────────────────────
         $stats = [
-            'total_firmas'     => $todasFirmas->count(),
-            'total_vales'      => $vales->count(),
-            'vales_en_proceso' => ValeInventario::where('estado', 'en_firma')->count(),
-            'usuarios_activos' => PersonalReportante::where('estado', 'aprobado')->count(),
-            'pendientes'       => PersonalReportante::where('estado', 'pendiente')->count(),
+            'total_firmas'       => $todasFirmas->count(),
+            'usuarios_activos'   => PersonalReportante::where('estado', 'aprobado')
+                ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+                ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+                ->count(),
+            'pendientes'         => PersonalReportante::where('estado', 'pendiente')
+                ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+                ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+                ->count(),
 
-            'total_logs'       => $logsConFecha->count(),
-            'acceso'           => $accesos->count(),
-            'firma_log'        => $logsConFecha->where('tipo', 'firma')->count(),
-            'equipo'           => $logsConFecha->where('tipo', 'equipo')->count(),
-            'reporte'          => $logsConFecha->where('tipo', 'reporte')->count(),
-            'usuario'          => $logsConFecha->where('tipo', 'usuario')->count(),
-            'historial_equipos'=> $historial->count(),
+            'vales_firmados'     => $fVale->count(),
+            'total_vales'        => $vales->count(),
+
+            'registros_firmados' => $fReg->count(),
+            'total_registros'    => $totalRegistrosPeriodo,
+
+            'reportes_firmados'  => $fSol->count(),
+            'total_reportes'     => $totalReportesPeriodo,
+
+            'total_logs'         => $logsConFecha->count(),
+            'acceso'             => $accesos->count(),
+            'firma_log'          => $logsConFecha->where('tipo', 'firma')->count(),
+            'equipo'             => $logsConFecha->where('tipo', 'equipo')->count(),
+            'reporte'            => $logsConFecha->where('tipo', 'reporte')->count(),
+            'usuario'            => $logsConFecha->where('tipo', 'usuario')->count(),
+            'historial_equipos'  => $historial->count(),
         ];
 
         $generadoEn  = now()->format('d/m/Y H:i');

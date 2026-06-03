@@ -30,7 +30,10 @@ Route::get('/mantenimiento/{mantenimiento}/vale-pdf', [App\Http\Controllers\Mant
 
 // Pizarrón en pantalla completa (sin layout de Filament)
 Route::get('/pizarron', function () {
-    $reportes = \App\Models\ReportePizarron::activos()->orderBy('created_at', 'asc')->get();
+    $reportes = \App\Models\ReportePizarron::activos()
+        ->orderByRaw("CASE prioridad WHEN 'urgencia' THEN 1 WHEN 'moderada' THEN 2 WHEN 'media' THEN 3 ELSE 4 END")
+        ->orderBy('created_at', 'desc')
+        ->get();
     $eventos  = \App\Models\EventoCalendario::query()
         ->whereDate('fecha_inicio', '>=', now()->startOfMonth())
         ->whereDate('fecha_inicio', '<=', now()->endOfMonth()->addMonth())
@@ -42,6 +45,16 @@ Route::get('/pizarron', function () {
 // API: conteo de reportes activos para el ciclo JS
 Route::get('/pizarron/count', function () {
     return response()->json(['count' => \App\Models\ReportePizarron::activos()->count()]);
+})->middleware('auth');
+
+// API: prioridad máxima de reportes creados en los últimos 15 seg (para sonido)
+Route::get('/pizarron/nuevos', function () {
+    $orden = ['baja' => 1, 'media' => 2, 'moderada' => 3, 'urgencia' => 4];
+    $nuevos = \App\Models\ReportePizarron::activos()
+        ->where('created_at', '>=', now()->subSeconds(15))
+        ->pluck('prioridad');
+    $maxPrioridad = $nuevos->sortByDesc(fn($p) => $orden[$p] ?? 0)->first();
+    return response()->json(['prioridad' => $maxPrioridad]);
 })->middleware('auth');
 
 // API: timestamp del último cambio para detectar ediciones
@@ -114,6 +127,12 @@ Route::middleware('auth')->group(function () {
         $pdf = (new \App\Services\BitacoraOverlayService())->stream($bitacora);
         return response($pdf, 200, ['Content-Type' => 'application/pdf']);
     })->name('bitacora.preview');
+
+    Route::get('/bitacora/{bitacora}/debug', function (\App\Models\BitacoraReporte $bitacora) {
+        $pdf = (new \App\Services\BitacoraOverlayService())->debug($bitacora);
+        return response($pdf, 200, ['Content-Type' => 'application/pdf']);
+    })->name('bitacora.debug');
+
 });
 
 // Historial de cambios del inventario de equipos (PDF individual)
@@ -150,6 +169,11 @@ Route::prefix('reportes')->name('portal.')->group(function () {
     });
 });
 
+// Exportación PDF de estadísticas de ingeniería
+Route::get('/admin/estadisticas-ingenieria/exportar-pdf', [App\Http\Controllers\EstadisticasIngenieriaController::class, 'exportarPdf'])
+    ->name('admin.estadisticas-ingenieria.pdf')
+    ->middleware('auth');
+
 // Exportación PDF de auditoría (solo admins autenticados)
 Route::get('/admin/auditoria/exportar-pdf', [App\Http\Controllers\AuditoriaController::class, 'exportarPdf'])
     ->name('admin.auditoria.pdf')
@@ -180,3 +204,31 @@ Route::get('/formato-archivo/{formato}', function (\App\Models\Formato $formato)
         'Cache-Control'       => 'private, no-cache',
     ]);
 })->name('formato.archivo')->middleware('auth');
+
+// ── Overlay Editor (herramienta de desarrollo) ──────────────────────────────
+Route::get('/overlay-editor', function () {
+    $positions  = json_decode(file_get_contents(storage_path('app/overlay_positions.json')), true);
+    $bitacora   = \App\Models\BitacoraReporte::latest()->first();
+    $bitacoraId = $bitacora?->id ?? 1;
+    return view('overlay-editor', compact('positions', 'bitacoraId'));
+})->name('overlay.editor');
+
+Route::get('/overlay-template', function () {
+    return response()->file(storage_path('app/templates/solicitud_servicio.pdf'), [
+        'Content-Type'  => 'application/pdf',
+        'Cache-Control' => 'no-cache',
+    ]);
+})->name('overlay.template');
+
+Route::post('/overlay-editor/save', function (\Illuminate\Http\Request $request) {
+    try {
+        $data = $request->json()->all();
+        file_put_contents(
+            storage_path('app/overlay_positions.json'),
+            json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+        return response()->json(['ok' => true]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('overlay.save');

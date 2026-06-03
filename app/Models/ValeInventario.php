@@ -25,6 +25,7 @@ class ValeInventario extends Model
         'usuario_nombre',
         'quien_recibe',
         'cargo_recibe',
+        'equipos',
         'observaciones',
         'firma_imagen',
         'firma_ingeniero',
@@ -35,6 +36,7 @@ class ValeInventario extends Model
     protected $casts = [
         'firmado_at'    => 'datetime',
         'concretado_at' => 'datetime',
+        'equipos'       => 'array',
     ];
 
     public function inventarioEquipo(): BelongsTo

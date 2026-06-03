@@ -6,6 +6,7 @@ use App\Filament\Resources\ValeInventarioResource\Pages;
 use App\Models\PersonalReportante;
 use App\Models\ValeInventario;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Set;
@@ -83,29 +84,40 @@ class ValeInventarioResource extends Resource
                         }),
                 ]),
 
-            Section::make('Datos del equipo')
-                ->columns(2)
+            Section::make('Equipos')
+                ->description('Agrega uno o más equipos al vale.')
                 ->schema([
-                    TextInput::make('equipo_nombre')
-                        ->label('Descripción del equipo')
-                        ->required()
-                        ->columnSpanFull(),
+                    Repeater::make('equipos')
+                        ->label('')
+                        ->schema([
+                            TextInput::make('equipo_nombre')
+                                ->label('Descripción del equipo')
+                                ->required()
+                                ->columnSpanFull(),
 
-                    TextInput::make('numero_inventario')
-                        ->label('No. Inventario'),
+                            TextInput::make('numero_inventario')
+                                ->label('No. Inventario'),
 
-                    TextInput::make('numero_serie')
-                        ->label('No. Serie'),
+                            TextInput::make('numero_serie')
+                                ->label('No. Serie'),
 
-                    TextInput::make('marca')
-                        ->label('Marca'),
+                            TextInput::make('marca')
+                                ->label('Marca'),
 
-                    TextInput::make('modelo')
-                        ->label('Modelo'),
+                            TextInput::make('modelo')
+                                ->label('Modelo'),
 
-                    TextInput::make('unidad_medica')
-                        ->label('Unidad médica')
-                        ->columnSpanFull(),
+                            TextInput::make('unidad_medica')
+                                ->label('Unidad médica')
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2)
+                        ->addActionLabel('+ Agregar equipo')
+                        ->defaultItems(1)
+                        ->minItems(1)
+                        ->reorderable()
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['equipo_nombre'] ?? null),
                 ]),
 
             Section::make('Receptor')
@@ -238,6 +250,7 @@ class ValeInventarioResource extends Resource
     {
         return [
             'index'     => Pages\ListValeInventarios::route('/'),
+            'create'    => Pages\CreateValeInventario::route('/create'),
             'concretar' => Pages\ConcretarVale::route('/{record}/concretar'),
             'firmar'    => Pages\FirmarVale::route('/{record}/firmar'),
         ];
@@ -256,6 +269,6 @@ class ValeInventarioResource extends Resource
 
     public static function canCreate(): bool
     {
-        return false;
+        return true;
     }
 }

@@ -83,7 +83,10 @@ class Dashboard extends BaseDashboard
 
     public function getReportes()
     {
-        return ReportePizarron::activos()->orderBy('created_at', 'asc')->get();
+        return ReportePizarron::activos()
+            ->orderByRaw("CASE prioridad WHEN 'urgencia' THEN 1 WHEN 'moderada' THEN 2 WHEN 'media' THEN 3 ELSE 4 END")
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function toggleMinimizado(int $id): void

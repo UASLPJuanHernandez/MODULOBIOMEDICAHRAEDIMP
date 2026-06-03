@@ -86,7 +86,7 @@ document.addEventListener('livewire:initialized', function () {
     setTimeout(function () {
         document.dispatchEvent(new CustomEvent('fmt:init-direct', {
             detail: {
-                url:    @js(route('bitacora.preview', $record)),
+                url:    @js(route('bitacora.preview', $record)) + '?t=' + Date.now(),
                 campos: [],
                 valores: {}
             }

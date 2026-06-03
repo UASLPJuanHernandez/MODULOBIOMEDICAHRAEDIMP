@@ -1,47 +1,15 @@
 <x-filament-panels::page>
 <div x-data="{ tab: 'actividad' }" class="space-y-5">
 
-    {{-- ── Tarjetas de resumen ──────────────────────────────────────────────── --}}
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        @php
-            $cards = [
-                ['label'=>'Firmas hoy',       'value'=>$firmasHoy,       'color'=>'blue'],
-                ['label'=>'Firmas esta semana','value'=>$firmasSem,       'color'=>'indigo'],
-                ['label'=>'Vales este mes',    'value'=>$valesMes,        'color'=>'violet'],
-                ['label'=>'Vales en proceso',  'value'=>$valesEnProceso,  'color'=>'amber'],
-                ['label'=>'Usuarios activos',  'value'=>$usuariosActivos, 'color'=>'green'],
-                ['label'=>'Pendientes aprob.', 'value'=>$pendientes,      'color'=>'red'],
-            ];
-            $cm = [
-                'blue'   => 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
-                'indigo' => 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
-                'violet' => 'bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300',
-                'amber'  => 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300',
-                'green'  => 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300',
-                'red'    => 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300',
-            ];
-        @endphp
-        @foreach($cards as $card)
-        <div class="rounded-xl border border-gray-200 dark:border-gray-700 {{ $cm[$card['color']] }} p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">{{ $card['label'] }}</p>
-            <p class="text-3xl font-bold">{{ $card['value'] }}</p>
-        </div>
-        @endforeach
-    </div>
-
     {{-- ── Barra de filtros ─────────────────────────────────────────────────── --}}
     <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
         <div class="flex flex-wrap gap-3 items-end">
-
-            {{-- Búsqueda --}}
             <div class="flex-1 min-w-48">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Buscar</label>
                 <input wire:model.live.debounce.400ms="busqueda"
                        type="text" placeholder="Descripción, actor, IP…"
                        class="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             </div>
-
-            {{-- Tipo --}}
             <div class="min-w-36">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Tipo de evento</label>
                 <select wire:model.live="filtroTipo"
@@ -54,8 +22,6 @@
                     <option value="usuario">Usuario</option>
                 </select>
             </div>
-
-            {{-- Fecha desde --}}
             <div class="min-w-40">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Desde</label>
                 <input wire:model.live="fechaDesde"
@@ -65,8 +31,6 @@
                        onblur="if(!this.value) this.type='text'"
                        class="w-full py-1.5 px-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500">
             </div>
-
-            {{-- Fecha hasta --}}
             <div class="min-w-40">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Hasta</label>
                 <input wire:model.live="fechaHasta"
@@ -76,21 +40,74 @@
                        onblur="if(!this.value) this.type='text'"
                        class="w-full py-1.5 px-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500">
             </div>
-
-            {{-- Limpiar filtros --}}
-            <div class="flex gap-2">
+            <div>
                 <button wire:click="$set('busqueda',''); $set('filtroTipo',''); $set('fechaDesde',''); $set('fechaHasta','')"
                         class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Limpiar
                 </button>
             </div>
         </div>
-
         @if($busqueda || $filtroTipo || $fechaDesde || $fechaHasta)
         <p class="mt-2 text-xs text-primary-600 dark:text-primary-400 font-medium">
-            Filtros activos — mostrando resultados filtrados en las tabs Actividad e Historial Equipos.
+            Filtros activos — resultados filtrados en tarjetas, Actividad, Firmas, Historial Equipos, Vales, Accesos y Usuarios.
         </p>
         @endif
+    </div>
+
+    {{-- ── Tarjetas de resumen ──────────────────────────────────────────────── --}}
+    {{-- Fila 1: general --}}
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">Total firmas</p>
+            <p class="text-3xl font-bold">{{ $totalFirmas }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">Usuarios activos</p>
+            <p class="text-3xl font-bold">{{ $usuariosActivos }}</p>
+        </div>
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">Pendientes aprob.</p>
+            <p class="text-3xl font-bold">{{ $pendientes }}</p>
+        </div>
+    </div>
+    {{-- Fila 2: por tipo de documento --}}
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
+        {{-- Vales --}}
+        <div class="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950 p-4 space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400 mb-2">Vales</p>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Total</span>
+                <span class="font-bold text-violet-700 dark:text-violet-300">{{ $totalVales }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Firmados</span>
+                <span class="font-bold text-violet-700 dark:text-violet-300">{{ $valesFirmados }}</span>
+            </div>
+        </div>
+        {{-- Registros de formatos --}}
+        <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 p-4 space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 mb-2">Registros de formatos</p>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Total</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-300">{{ $totalRegistros }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Firmados</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-300">{{ $registrosFirmados }}</span>
+            </div>
+        </div>
+        {{-- Reportes --}}
+        <div class="rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950 p-4 space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wide text-sky-600 dark:text-sky-400 mb-2">Reportes</p>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Total</span>
+                <span class="font-bold text-sky-700 dark:text-sky-300">{{ $totalReportes }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Firmados</span>
+                <span class="font-bold text-sky-700 dark:text-sky-300">{{ $reportesFirmados }}</span>
+            </div>
+        </div>
     </div>
 
     {{-- ── Contenedor de tabs ───────────────────────────────────────────────── --}}
@@ -321,16 +338,29 @@
                     <tr>
                         <th class="px-4 py-3 text-left w-44">Fecha y hora</th>
                         <th class="px-4 py-3 text-left">Usuario</th>
-                        <th class="px-4 py-3 text-left w-36">Origen</th>
+                        <th class="px-4 py-3 text-left w-32">Tipo</th>
+                        <th class="px-4 py-3 text-left w-36">Dominio</th>
                         <th class="px-4 py-3 text-left w-36">IP</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 @foreach($accesos as $a)
-                @php $origen = $a->metadata['origen'] ?? null; @endphp
+                @php
+                    $origen     = $a->metadata['origen'] ?? null;
+                    $actorTipo  = $a->actor_tipo ?? null;
+                @endphp
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40">
                     <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap font-mono">{{ $a->created_at->format('d/m/Y H:i:s') }}</td>
                     <td class="px-4 py-2.5 text-gray-700 dark:text-gray-300 font-medium">{{ $a->actor_nombre }}</td>
+                    <td class="px-4 py-2.5">
+                        @if($actorTipo === 'admin')
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">Ingeniero</span>
+                        @elseif($actorTipo === 'personal')
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">Personal reportante</span>
+                        @else
+                            <span class="text-xs text-gray-400">—</span>
+                        @endif
+                    </td>
                     <td class="px-4 py-2.5">
                         @if($origen === '/admin')
                             <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">

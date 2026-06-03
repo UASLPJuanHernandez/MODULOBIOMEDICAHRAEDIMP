@@ -5,282 +5,229 @@
     <title>{{ $vale->tipo_label }} — {{ $vale->numero_inventario }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
-            color: #1a1a1a;
-            padding: 28px 32px;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #1e40af;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-        .header img { max-width: 100%; height: auto; display: block; margin: 0 auto 8px; }
-        .title {
-            font-size: 15px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 10pt;
+            color: #000000;
             font-weight: bold;
-            color: #1e40af;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-style: italic;
         }
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-top: 6px;
-        }
-        .badge-entrega { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-        .badge-retiro  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-        .section {
-            margin-bottom: 18px;
+        /* ── Imagen de encabezado fija en la parte superior de cada página ── */
+        .page-header {
+            position: fixed;
+            top: 10px;
+            left: 24px;
+            right: 24px;
+            width: auto;
         }
-        .section-title {
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: #374151;
-            background: #f3f4f6;
-            border-left: 3px solid #1e40af;
-            padding: 5px 8px;
-            margin-bottom: 10px;
-        }
-        .row {
-            display: flex;
-            border-bottom: 1px dotted #d1d5db;
-            padding: 5px 0;
-        }
-        .row:last-child { border-bottom: none; }
-        .label {
-            font-weight: bold;
-            width: 180px;
-            color: #374151;
-            flex-shrink: 0;
-        }
-        .value { flex: 1; color: #111827; }
+        .page-header img { width: 100%; display: block; }
 
-        .signatures {
-            margin-top: 48px;
-            display: flex;
-            justify-content: space-around;
-        }
-        .sig-box {
-            width: 42%;
+        /* ── Imagen de pie fija en la parte inferior de cada página ── */
+        .page-footer {
+            position: fixed;
+            bottom: 10px;
+            left: 24px;
+            right: 24px;
+            width: auto;
             text-align: center;
+            font-size: 8pt;
+            color: #000000;
         }
-        .sig-line {
-            border-top: 1px solid #374151;
-            padding-top: 6px;
-            margin-top: 6px;
-            font-size: 11px;
-            color: #374151;
+        .page-footer img { width: 100%; display: block; }
+        .page-footer-text { padding: 4px 32px 0; border-top: 1px solid #000000; }
+
+        /* ── Contenido — margen suficiente para no quedar bajo header/footer ── */
+        .content {
+            margin-top: 160px;
+            margin-bottom: 140px;
+            padding: 0 32px;
         }
-        .footer {
-            margin-top: 32px;
-            text-align: center;
-            font-size: 10px;
-            color: #6b7280;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 10px;
-        }
-        .footer img { max-width: 100%; height: auto; margin-top: 8px; }
+
+        .doc-header { border-bottom: 2px solid #000000; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .header-title { font-size: 16pt; font-weight: bold; font-style: italic; color: #000000; text-transform: uppercase; }
+        .header-sub { font-size: 10pt; color: #000000; margin-top: 3px; font-weight: bold; font-style: italic; }
+        .header-meta { text-align: right; font-size: 9pt; color: #000000; line-height: 1.6; font-weight: bold; font-style: italic; }
+
+        .tipo-box { border: 1px solid #000000; padding: 5px 8px; font-size: 8pt; margin-bottom: 14px; font-weight: bold; font-style: italic; }
+
+        .section-title { font-size: 11pt; font-weight: bold; font-style: italic; text-transform: uppercase; color: #000000; border-left: 4px solid #000000; padding: 5px 8px; margin-bottom: 8px; margin-top: 18px; page-break-after: avoid; }
+
+        table.data { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        table.data th { background: #000000; color: #ffffff; font-size: 8pt; font-weight: bold; font-style: italic; text-transform: uppercase; padding: 5px 6px; text-align: left; }
+        table.data td { font-size: 9pt; padding: 5px 6px; border-bottom: 1px solid #cccccc; color: #000000; vertical-align: top; font-weight: bold; font-style: italic; }
+        table.data tr:nth-child(even) td { background: #f0f0f0; }
+        .label-col { width: 180px; }
+
+        .signatures { margin-top: 52px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+        .sig-box { width: 42%; text-align: center; }
+        .sig-area { height: 70px; display: flex; align-items: center; justify-content: center; }
+        .sig-line { border-top: 1px solid #000000; padding-top: 6px; margin-top: 6px; font-size: 9pt; font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    @php
-        $headerPath = public_path('images/vales/encabezado vale.jpg');
-        $headerB64  = file_exists($headerPath)
-            ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerPath))
-            : null;
-    @endphp
-    @if($headerB64)
-        <img src="{{ $headerB64 }}" alt="Encabezado">
-    @endif
-    <div class="title">{{ $vale->tipo_label }}</div>
-    <span class="badge badge-{{ $vale->tipo }}">
-        {{ strtoupper($vale->tipo_label) }}
-    </span>
-</div>
+@php
+    $headerPath = public_path('images/vales/encabezado vale.jpg');
+    $headerB64  = file_exists($headerPath)
+        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerPath))
+        : null;
+    $footerPath = public_path('images/vales/pie de pagina vale.jpg');
+    $footerB64  = file_exists($footerPath)
+        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($footerPath))
+        : null;
+@endphp
 
-<div class="section">
-    <div class="section-title">Información general</div>
-    <div class="row">
-        <span class="label">Fecha:</span>
-        <span class="value">{{ $vale->created_at->format('d/m/Y H:i') }}</span>
-    </div>
-    <div class="row">
-        <span class="label">Generado por:</span>
-        <span class="value">{{ $vale->usuario_nombre ?: '—' }}</span>
-    </div>
-    <div class="row">
-        <span class="label">Área / Departamento:</span>
-        <span class="value">{{ $vale->area ?: '—' }}</span>
-    </div>
-    @if($vale->unidad_medica)
-    <div class="row">
-        <span class="label">Unidad médica:</span>
-        <span class="value">{{ $vale->unidad_medica }}</span>
-    </div>
-    @endif
-</div>
-
-@if($vale->quien_recibe || $vale->cargo_recibe || $vale->observaciones)
-<div class="section">
-    <div class="section-title">Datos del receptor</div>
-    @if($vale->quien_recibe)
-    <div class="row">
-        <span class="label">Recibe:</span>
-        <span class="value">{{ $vale->quien_recibe }}</span>
-    </div>
-    @endif
-    @if($vale->cargo_recibe)
-    <div class="row">
-        <span class="label">Cargo / Servicio:</span>
-        <span class="value">{{ $vale->cargo_recibe }}</span>
-    </div>
-    @endif
-    @if($vale->observaciones)
-    <div class="row">
-        <span class="label">Observaciones:</span>
-        <span class="value">{{ $vale->observaciones }}</span>
-    </div>
-    @endif
+{{-- IMAGEN FIJA DE ENCABEZADO --}}
+@if($headerB64)
+<div class="page-header">
+    <img src="{{ $headerB64 }}" alt="Encabezado">
 </div>
 @endif
 
-<div class="section">
-    <div class="section-title">Datos del equipo</div>
-    <div class="row">
-        <span class="label">Equipo / Descripción:</span>
-        <span class="value">{{ $vale->equipo_nombre ?: '—' }}</span>
-    </div>
-    <div class="row">
-        <span class="label">No. Inventario:</span>
-        <span class="value">{{ $vale->numero_inventario ?: '—' }}</span>
-    </div>
-    @if($vale->marca)
-    <div class="row">
-        <span class="label">Marca:</span>
-        <span class="value">{{ $vale->marca }}</span>
-    </div>
-    @endif
-    @if($vale->modelo)
-    <div class="row">
-        <span class="label">Modelo:</span>
-        <span class="value">{{ $vale->modelo }}</span>
-    </div>
-    @endif
-    @if($vale->numero_serie)
-    <div class="row">
-        <span class="label">No. Serie:</span>
-        <span class="value">{{ $vale->numero_serie }}</span>
-    </div>
-    @endif
-</div>
-
-@php
-    /**
-     * Convierte cualquier formato de firma a algo que dompdf pueda renderizar.
-     * Devuelve ['type' => 'svg'|'img'|'none', 'content' => string|null]
-     * dompdf soporta <img src="data:image/png;base64,..."> pero NO data:image/svg+xml en src.
-     * Para SVG hay que embeber el <svg> inline.
-     */
-    $parseFirma = function(?string $raw): array {
-        if (!$raw) return ['type' => 'none', 'content' => null];
-
-        $imagen = $raw;
-        // Formato JSON {posicion: {...}, imagen: "..."}
-        if (str_starts_with(ltrim($raw), '{')) {
-            $decoded = json_decode($raw, true);
-            $imagen  = $decoded['imagen'] ?? $raw;
-        }
-
-        if (!$imagen) return ['type' => 'none', 'content' => null];
-
-        // SVG charset url-encoded
-        if (str_starts_with($imagen, 'data:image/svg+xml;charset=utf-8,')) {
-            $svg = rawurldecode(substr($imagen, strlen('data:image/svg+xml;charset=utf-8,')));
-            return ['type' => 'svg', 'content' => $svg];
-        }
-        // SVG base64
-        if (str_starts_with($imagen, 'data:image/svg+xml;base64,')) {
-            $svg = base64_decode(substr($imagen, strlen('data:image/svg+xml;base64,')));
-            return ['type' => 'svg', 'content' => $svg];
-        }
-        // PNG / JPEG dataUrl — dompdf los soporta directamente
-        if (str_starts_with($imagen, 'data:image/')) {
-            return ['type' => 'img', 'content' => $imagen];
-        }
-        // Path SVG crudo (elementos sin wrapper <svg>)
-        if (str_contains($imagen, '<path') || str_contains($imagen, '<polyline') || str_contains($imagen, '<line')) {
-            $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 140">' . $imagen . '</svg>';
-            return ['type' => 'svg', 'content' => $svg];
-        }
-
-        return ['type' => 'none', 'content' => null];
-    };
-
-    $firmaEnt = $parseFirma($vale->firma_ingeniero);
-    $firmaRec = $parseFirma($vale->firma_imagen);
-@endphp
-
-<div class="signatures">
-    <div class="sig-box">
-        @if($firmaEnt['type'] === 'img')
-            <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;display:block;margin:0 auto 4px;" alt="Firma ingeniero">
-        @elseif($firmaEnt['type'] === 'svg')
-            <div style="height:60px;max-width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                {!! $firmaEnt['content'] !!}
-            </div>
-        @else
-            <div style="height:60px;"></div>
-        @endif
-        <div class="sig-line">
-            <strong>ENTREGA</strong><br>
-            Ingeniería Biomédica
-        </div>
-    </div>
-    <div class="sig-box">
-        @if($firmaRec['type'] === 'img')
-            <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;display:block;margin:0 auto 4px;" alt="Firma receptor">
-        @elseif($firmaRec['type'] === 'svg')
-            <div style="height:60px;max-width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                {!! $firmaRec['content'] !!}
-            </div>
-        @else
-            <div style="height:60px;"></div>
-        @endif
-        <div class="sig-line">
-            <strong>RECIBE</strong><br>
-            {{ $vale->quien_recibe ?: ($vale->area ?: 'Área correspondiente') }}
-            @if($vale->cargo_recibe)
-                <br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>
-            @endif
-        </div>
-    </div>
-</div>
-
-<div class="footer">
-    Documento generado el {{ now()->format('d/m/Y H:i') }} —
-    Área de Ingeniería Biomédica, HRAEIMP
-    @php
-        $footerPath = public_path('images/vales/pie de pagina vale.jpg');
-        $footerB64  = file_exists($footerPath)
-            ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($footerPath))
-            : null;
-    @endphp
+{{-- IMAGEN FIJA DE PIE --}}
+<div class="page-footer">
     @if($footerB64)
-        <br><img src="{{ $footerB64 }}" alt="Pie de página">
+        <img src="{{ $footerB64 }}" alt="Pie de página">
+    @else
+        <div class="page-footer-text">
+            Documento generado el {{ now()->format('d/m/Y H:i') }} — Área de Ingeniería Biomédica, HRAEIMP
+        </div>
     @endif
 </div>
+
+{{-- CONTENIDO --}}
+<div class="content">
+
+    {{-- Título del documento --}}
+    <div class="doc-header">
+        <div>
+            <div class="header-title">{{ $vale->tipo_label }}</div>
+            <div class="header-sub">Departamento de Ingeniería Biomédica — HRAEIMP</div>
+        </div>
+        <div class="header-meta">
+            Folio: VAL-{{ str_pad($vale->id, 5, '0', STR_PAD_LEFT) }}<br>
+            Fecha: {{ $vale->created_at->format('d/m/Y H:i') }}
+        </div>
+    </div>
+
+    {{-- TIPO --}}
+    <div class="tipo-box">
+        <strong>Tipo de movimiento:</strong> &nbsp;
+        {{ strtoupper($vale->tipo === 'entrega' ? 'Entrega (alta / préstamo)' : 'Retiro (baja / devolución)') }}
+    </div>
+
+    {{-- DATOS DEL EQUIPO --}}
+    @php $equipos = $vale->equipos ?: [['equipo_nombre' => $vale->equipo_nombre, 'numero_inventario' => $vale->numero_inventario, 'marca' => $vale->marca, 'modelo' => $vale->modelo, 'numero_serie' => $vale->numero_serie, 'unidad_medica' => $vale->unidad_medica]]; @endphp
+
+    @foreach($equipos as $i => $eq)
+    <div style="page-break-inside: avoid;">
+    <div class="section-title">{{ count($equipos) > 1 ? 'Equipo ' . ($i + 1) : 'Datos del equipo' }}</div>
+    <table class="data">
+        <tbody>
+            <tr><td class="label-col">Equipo / Descripción</td><td>{{ $eq['equipo_nombre'] ?: '—' }}</td></tr>
+            @if(!empty($eq['numero_inventario']))
+            <tr><td class="label-col">No. Inventario</td><td>{{ $eq['numero_inventario'] }}</td></tr>
+            @endif
+            @if(!empty($eq['marca']))
+            <tr><td class="label-col">Marca</td><td>{{ $eq['marca'] }}</td></tr>
+            @endif
+            @if(!empty($eq['modelo']))
+            <tr><td class="label-col">Modelo</td><td>{{ $eq['modelo'] }}</td></tr>
+            @endif
+            @if(!empty($eq['numero_serie']))
+            <tr><td class="label-col">No. Serie</td><td>{{ $eq['numero_serie'] }}</td></tr>
+            @endif
+            @if(!empty($eq['unidad_medica']))
+            <tr><td class="label-col">Unidad médica</td><td>{{ $eq['unidad_medica'] }}</td></tr>
+            @endif
+        </tbody>
+    </table>
+    </div>
+    @endforeach
+
+    {{-- INFORMACIÓN GENERAL --}}
+    <div class="section-title">Información general</div>
+    <table class="data">
+        <tbody>
+            <tr><td class="label-col">Área / Departamento</td><td>{{ $vale->area ?: '—' }}</td></tr>
+            @if($vale->quien_recibe)
+            <tr><td class="label-col">Recibe</td><td>{{ $vale->quien_recibe }}</td></tr>
+            @endif
+            @if($vale->cargo_recibe)
+            <tr><td class="label-col">Cargo / Servicio</td><td>{{ $vale->cargo_recibe }}</td></tr>
+            @endif
+            @if($vale->observaciones)
+            <tr><td class="label-col">Observaciones</td><td>{{ $vale->observaciones }}</td></tr>
+            @endif
+        </tbody>
+    </table>
+
+    {{-- FIRMAS --}}
+    @php
+        $parseFirma = function(?string $raw): array {
+            if (!$raw) return ['type' => 'none', 'content' => null];
+            $imagen = $raw;
+            if (str_starts_with(ltrim($raw), '{')) {
+                $decoded = json_decode($raw, true);
+                $imagen  = $decoded['imagen'] ?? $raw;
+            }
+            if (!$imagen) return ['type' => 'none', 'content' => null];
+            if (str_starts_with($imagen, 'data:image/svg+xml;charset=utf-8,')) {
+                $svg = rawurldecode(substr($imagen, strlen('data:image/svg+xml;charset=utf-8,')));
+                return ['type' => 'svg', 'content' => $svg];
+            }
+            if (str_starts_with($imagen, 'data:image/svg+xml;base64,')) {
+                $svg = base64_decode(substr($imagen, strlen('data:image/svg+xml;base64,')));
+                return ['type' => 'svg', 'content' => $svg];
+            }
+            if (str_starts_with($imagen, 'data:image/')) {
+                return ['type' => 'img', 'content' => $imagen];
+            }
+            if (str_contains($imagen, '<path') || str_contains($imagen, '<polyline') || str_contains($imagen, '<line')) {
+                $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 140">' . $imagen . '</svg>';
+                return ['type' => 'svg', 'content' => $svg];
+            }
+            return ['type' => 'none', 'content' => null];
+        };
+        $firmaEnt = $parseFirma($vale->firma_ingeniero);
+        $firmaRec = $parseFirma($vale->firma_imagen);
+    @endphp
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-area">
+                @if($firmaEnt['type'] === 'img')
+                    <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
+                @elseif($firmaEnt['type'] === 'svg')
+                    <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaEnt['content'] !!}</div>
+                @endif
+            </div>
+            <div class="sig-line">
+                ENTREGA<br>
+                <span style="font-weight:normal;">Ingeniería Biomédica</span>
+            </div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-area">
+                @if($firmaRec['type'] === 'img')
+                    <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
+                @elseif($firmaRec['type'] === 'svg')
+                    <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaRec['content'] !!}</div>
+                @endif
+            </div>
+            <div class="sig-line">
+                RECIBE<br>
+                <span style="font-weight:normal;">{{ $vale->quien_recibe ?: ($vale->area ?: 'Área correspondiente') }}</span>
+                @if($vale->cargo_recibe)
+                    <br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>
+                @endif
+            </div>
+        </div>
+    </div>
+
+</div>{{-- /content --}}
 
 </body>
 </html>

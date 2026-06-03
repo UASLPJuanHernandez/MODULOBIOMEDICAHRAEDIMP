@@ -43,10 +43,6 @@ class Auditorias extends Page
 
     protected function getViewData(): array
     {
-        $hoy  = today();
-        $mes  = now()->startOfMonth();
-        $sem  = now()->startOfWeek();
-
         // ── Filtros aplicados a audit_logs ───────────────────────────────────
         $logQuery = AuditLog::query();
 
@@ -90,24 +86,60 @@ class Auditorias extends Page
 
         $historialEquipos = $histQuery->limit(400)->get();
 
-        // ── Stats (sin filtros — reflejan el estado global del sistema) ───────
-        $firmasHoy   = ValeInventario::whereDate('firmado_at', $hoy)->count()
-            + FirmaSolicitud::whereDate('firmado_at', $hoy)->count()
-            + Registro::whereDate('firmado_at', $hoy)->count();
+        // ── Stats filtrados ───────────────────────────────────────────────────
+        $desde = $this->fechaDesde ?: null;
+        $hasta = $this->fechaHasta ?: null;
 
-        $firmasSem   = ValeInventario::where('firmado_at', '>=', $sem)->count()
-            + FirmaSolicitud::where('firmado_at', '>=', $sem)->count()
-            + Registro::where('firmado_at', '>=', $sem)->count();
+        $valesFirmados = ValeInventario::whereNotNull('firmado_at')
+            ->when($desde, fn ($q) => $q->whereDate('firmado_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('firmado_at', '<=', $hasta))
+            ->count();
 
-        $valesMes        = ValeInventario::where('created_at', '>=', $mes)->count();
-        $valesEnProceso  = ValeInventario::where('estado', 'en_firma')->count();
-        $usuariosActivos = PersonalReportante::where('estado', 'aprobado')->count();
-        $pendientes      = PersonalReportante::where('estado', 'pendiente')->count();
+        $registrosFirmados = Registro::whereNotNull('firmado_at')
+            ->when($desde, fn ($q) => $q->whereDate('firmado_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('firmado_at', '<=', $hasta))
+            ->count();
+
+        $reportesFirmados = FirmaSolicitud::whereNotNull('firmado_at')
+            ->when($desde, fn ($q) => $q->whereDate('firmado_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('firmado_at', '<=', $hasta))
+            ->count();
+
+        $totalFirmas = $valesFirmados + $registrosFirmados + $reportesFirmados;
+
+        $totalVales = ValeInventario::query()
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
+        $totalRegistros = Registro::query()
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
+        $totalReportes = FirmaSolicitud::query()
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
+        $usuariosActivos = PersonalReportante::where('estado', 'aprobado')
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
+
+        $pendientes = PersonalReportante::where('estado', 'pendiente')
+            ->when($desde, fn ($q) => $q->whereDate('created_at', '>=', $desde))
+            ->when($hasta, fn ($q) => $q->whereDate('created_at', '<=', $hasta))
+            ->count();
 
         // ── Firmas combinadas (para tab Firmas) ──────────────────────────────
-        $fVale = ValeInventario::whereNotNull('firmado_at')
+        $fValeQ = ValeInventario::whereNotNull('firmado_at')
             ->with('jefe:id,nombre,area_jefe_servicio')
-            ->latest('firmado_at')->limit(200)
+            ->latest('firmado_at');
+        if ($this->fechaDesde !== '') $fValeQ->whereDate('firmado_at', '>=', $this->fechaDesde);
+        if ($this->fechaHasta !== '') $fValeQ->whereDate('firmado_at', '<=', $this->fechaHasta);
+
+        $fVale = $fValeQ->limit(200)
             ->get(['id','tipo','equipo_nombre','numero_inventario','area','jefe_id','firmado_at','estado'])
             ->map(fn ($v) => [
                 'tipo_doc'  => $v->tipo === 'entrega' ? 'Vale entrega' : 'Vale retiro',
@@ -118,8 +150,11 @@ class Auditorias extends Page
                 'badge'     => 'vale',
             ]);
 
-        $fSol = FirmaSolicitud::whereNotNull('firmado_at')
-            ->latest('firmado_at')->limit(200)->get()
+        $fSolQ = FirmaSolicitud::whereNotNull('firmado_at')->latest('firmado_at');
+        if ($this->fechaDesde !== '') $fSolQ->whereDate('firmado_at', '>=', $this->fechaDesde);
+        if ($this->fechaHasta !== '') $fSolQ->whereDate('firmado_at', '<=', $this->fechaHasta);
+
+        $fSol = $fSolQ->limit(200)->get()
             ->map(function ($s) {
                 $jefe = PersonalReportante::find($s->personal_reportante_id);
                 return [
@@ -132,9 +167,13 @@ class Auditorias extends Page
                 ];
             });
 
-        $fReg = Registro::whereNotNull('firmado_at')
+        $fRegQ = Registro::whereNotNull('firmado_at')
             ->with(['jefe:id,nombre,area_jefe_servicio', 'formato:id,nombre'])
-            ->latest('firmado_at')->limit(200)->get()
+            ->latest('firmado_at');
+        if ($this->fechaDesde !== '') $fRegQ->whereDate('firmado_at', '>=', $this->fechaDesde);
+        if ($this->fechaHasta !== '') $fRegQ->whereDate('firmado_at', '<=', $this->fechaHasta);
+
+        $fReg = $fRegQ->limit(200)->get()
             ->map(fn ($r) => [
                 'tipo_doc'  => 'Registro',
                 'documento' => $r->formato?->nombre ?? 'Registro #' . $r->id,
@@ -145,19 +184,54 @@ class Auditorias extends Page
             ]);
 
         $todasFirmas = $fVale->concat($fSol)->concat($fReg)
-            ->sortByDesc('fecha')->values();
+            ->sortByDesc('fecha')
+            ->when($this->busqueda !== '', fn ($c) => $c->filter(function ($f) {
+                $q = strtolower($this->busqueda);
+                return str_contains(strtolower($f['firmante']), $q)
+                    || str_contains(strtolower($f['area']), $q)
+                    || str_contains(strtolower($f['documento']), $q)
+                    || str_contains(strtolower($f['tipo_doc']), $q);
+            }))
+            ->values();
 
         // ── Vales ────────────────────────────────────────────────────────────
-        $vales = ValeInventario::with('jefe:id,nombre')
-            ->latest()->limit(300)
+        $valesQuery = ValeInventario::with('jefe:id,nombre')->latest();
+
+        if ($this->fechaDesde !== '') {
+            $valesQuery->whereDate('created_at', '>=', $this->fechaDesde);
+        }
+        if ($this->fechaHasta !== '') {
+            $valesQuery->whereDate('created_at', '<=', $this->fechaHasta);
+        }
+
+        $vales = $valesQuery->limit(300)
             ->get(['id','tipo','equipo_nombre','numero_inventario','area','usuario_nombre','jefe_id','estado','created_at','firmado_at']);
 
         // ── Usuarios ─────────────────────────────────────────────────────────
-        $usuarios = PersonalReportante::latest()
+        $usuariosQuery = PersonalReportante::latest();
+        if ($this->fechaDesde !== '') {
+            $usuariosQuery->whereDate('created_at', '>=', $this->fechaDesde);
+        }
+        if ($this->fechaHasta !== '') {
+            $usuariosQuery->whereDate('created_at', '<=', $this->fechaHasta);
+        }
+        if ($this->busqueda !== '') {
+            $q = $this->busqueda;
+            $usuariosQuery->where(fn ($sq) => $sq
+                ->where('nombre', 'like', "%{$q}%")
+                ->orWhere('servicio', 'like', "%{$q}%")
+                ->orWhere('area_jefe_servicio', 'like', "%{$q}%")
+                ->orWhere('numero_empleado', 'like', "%{$q}%")
+            );
+        }
+        $usuarios = $usuariosQuery
             ->get(['id','nombre','servicio','es_jefe_servicio','area_jefe_servicio','estado','created_at']);
 
         return compact(
-            'firmasHoy', 'firmasSem', 'valesMes', 'valesEnProceso',
+            'totalFirmas',
+            'valesFirmados', 'totalVales',
+            'registrosFirmados', 'totalRegistros',
+            'reportesFirmados', 'totalReportes',
             'usuariosActivos', 'pendientes',
             'auditLogs', 'historialEquipos',
             'todasFirmas', 'vales', 'usuarios'

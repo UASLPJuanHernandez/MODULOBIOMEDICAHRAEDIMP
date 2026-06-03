@@ -18,22 +18,22 @@
                 Reportes en tiempo real. Área de Ingeniería Biomédica del HRAE
             </p>
             <button
-                @click="modalReporte = true"
-                style="
-                    display:inline-flex; align-items:center; gap:6px;
-                    background:#2563eb; color:white;
-                    border:none; border-radius:8px;
-                    padding:8px 16px; font-size:13px; font-weight:600;
-                    cursor:pointer; transition:background 0.15s;
-                "
-                onmouseover="this.style.background='#1d4ed8'"
-                onmouseout="this.style.background='#2563eb'"
-            >
-                <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                </svg>
-                Agregar reporte
-            </button>
+                    @click="modalReporte = true"
+                    style="
+                        display:inline-flex; align-items:center; gap:6px;
+                        background:#2563eb; color:white;
+                        border:none; border-radius:8px;
+                        padding:8px 16px; font-size:13px; font-weight:600;
+                        cursor:pointer; transition:background 0.15s;
+                    "
+                    onmouseover="this.style.background='#1d4ed8'"
+                    onmouseout="this.style.background='#2563eb'"
+                >
+                    <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Agregar reporte
+                </button>
         </div>
 
         <div wire:poll.3s>
@@ -52,7 +52,7 @@
             <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
 
                 @foreach($reportes as $reporte)
-
+                <div wire:key="reporte-{{ $reporte->id }}">
                     @php
                         // Color del post-it segun prioridad
                         $colores = [
@@ -280,7 +280,7 @@
                         </div>
 
                     @endif
-
+                </div>{{-- wire:key --}}
                 @endforeach
 
             </div>

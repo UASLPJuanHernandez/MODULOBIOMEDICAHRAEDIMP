@@ -105,20 +105,22 @@ class BitacoraOverlayService
         $this->escribir($pdf, 164, 49,  51, $bitacora->numero_control ?? '');
 
         // ── Checkboxes SE SOLICITA — óvalo por columna ────────────────────
-        $esPreventivo = $bitacora->tipo_servicio === 'preventivo';
-        $esCorrectivo = $bitacora->tipo_servicio === 'correctivo';
+        $esPreventivo   = $bitacora->tipo_servicio === 'preventivo';
+        $esCorrectivo   = $bitacora->tipo_servicio === 'correctivo';
+        $tipoBaja       = $bitacora->tipo_baja ?? '';
 
-        $this->ovalo($pdf,  22, 76, $esPreventivo, 18);  // PREVENTIVO
-        $this->ovalo($pdf,  62, 76, $esCorrectivo, 15);  // CORRECTIVO
-        $this->ovalo($pdf,  96, 73, false,          9);  // POR NO SER FUNCIONAL
-        $this->ovalo($pdf, 119, 76, false,          9);  // INSERVIBLE
-        $this->ovalo($pdf, 141, 76, false,          7);  // OBSOLETO
-        $this->ovalo($pdf, 160, 76, false,          6);  // A DISPOSICIÓN
-        $this->ovalo($pdf, 176, 76, false,          6);  // TRASPASO
-        $this->ovalo($pdf, 199, 76, false,          9);  // OTRO
+        $this->ovalo($pdf,  22, 76, $esPreventivo,              18);  // PREVENTIVO
+        $this->ovalo($pdf,  62, 76, $esCorrectivo,              15);  // CORRECTIVO
+        $this->ovalo($pdf,  96, 73, $tipoBaja === 'no_funcional', 9); // POR NO SER FUNCIONAL
+        $this->ovalo($pdf, 119, 76, $tipoBaja === 'inservible',   9); // INSERVIBLE
+        $this->ovalo($pdf, 141, 76, $tipoBaja === 'obsoleto',     7); // OBSOLETO
+        $this->ovalo($pdf, 160, 76, $tipoBaja === 'disposicion',  6); // A DISPOSICIÓN
+        $this->ovalo($pdf, 176, 76, $tipoBaja === 'traspaso',     6); // TRASPASO
+        $this->ovalo($pdf, 199, 76, $tipoBaja === 'otro',         9); // OTRO
 
         // ── Justificación / Observaciones ────────────────────────────────
-        $this->bloque($pdf, 9, 82, 197, $bitacora->mensaje_original ?? '', 25);
+        $textoJustificacion = $bitacora->justificacion ?? $bitacora->mensaje_original ?? '';
+        $this->bloque($pdf, 9, 82, 197, $textoJustificacion, 25);
 
         // ── Finalizado ────────────────────────────────────────────────────
         $finalizado = in_array($bitacora->resultado, ['satisfactoria', 'parcial']);

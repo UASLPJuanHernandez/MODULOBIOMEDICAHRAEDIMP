@@ -423,25 +423,38 @@ class PortalReportesController extends Controller
         $request->validate([
             'descripcion' => 'required|string|min:10|max:1000',
         ], [
-            'descripcion.required' => 'Describe la falla antes de enviar.',
+            'descripcion.required' => 'Escribe el mensaje antes de enviar.',
             'descripcion.min'      => 'Por favor da un poco más de detalle (mínimo 10 caracteres).',
         ]);
 
-        // La IA extrae equipo, ubicación, descripción limpia y prioridad sugerida
-        $datos = $gemini->extraerDatosReporte($request->descripcion, $personal->servicio);
+        $areaDepartamento = $personal->servicio;
+
+        // La IA extrae todos los campos estructurados del mensaje libre
+        $datos = $gemini->extraerDatosReporte($request->descripcion, $areaDepartamento);
+
+        $titulo = $datos['nombre_dispositivo']
+            ? $datos['nombre_dispositivo'] . ' — ' . $areaDepartamento
+            : 'Reporte — ' . $areaDepartamento;
 
         ReportePizarron::create([
-            'titulo'                 => 'Reporte — ' . $personal->servicio,
-            'equipo'                 => $datos['equipo'],
+            'titulo'                 => $titulo,
+            'equipo'                 => $datos['nombre_dispositivo'],
             'ubicacion'              => $datos['ubicacion'],
             'descripcion'            => $request->descripcion,
             'descripcion_original'   => $request->descripcion,
-            'prioridad'              => $datos['prioridad'],
+            'prioridad'              => $datos['prioridad'] ?? 'baja',
             'estado'                 => 'pendiente',
             'minimizado'             => false,
             'personal_reportante_id' => $personal->id,
             'reportante_nombre'      => $personal->nombre,
-            'reportante_servicio'    => $personal->servicio,
+            'reportante_servicio'    => $areaDepartamento,
+            'nombre_dispositivo'     => $datos['nombre_dispositivo'],
+            'marca'                  => $datos['marca'],
+            'modelo'                 => $datos['modelo'],
+            'numero_serie'           => $datos['numero_serie'],
+            'numero_control'         => $datos['numero_control'],
+            'tipo_servicio'          => $datos['tipo_servicio'],
+            'tipo_baja'              => $datos['tipo_baja'],
         ]);
 
         return back()->with('enviado', true);

@@ -37,31 +37,36 @@ class GeminiService
     public function extraerDatosReporte(string $textoLibre, string $servicioReportante): array
     {
         $prompt = <<<PROMPT
-Eres un ingeniero biomédico senior recibiendo un reporte de falla de equipo médico.
-El reporte fue escrito por personal no técnico del hospital y puede ser confuso, largo o informal.
+Eres un ingeniero biomédico senior recibiendo un reporte escrito por personal no técnico del hospital.
+El mensaje puede ser informal, confuso o un párrafo libre.
 
 Servicio que reporta: "{$servicioReportante}"
 Texto original: "{$textoLibre}"
 
-Tu tarea es extraer ÚNICAMENTE la información que esté claramente mencionada en el texto. Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (sin markdown, sin texto adicional, solo el JSON):
+Extrae ÚNICAMENTE lo que esté mencionado con claridad. Devuelve ÚNICAMENTE un JSON válido (sin markdown, sin texto extra):
 {
-  "equipo": "nombre del equipo médico solo si está explícitamente mencionado o se puede identificar con total certeza. Null si hay cualquier duda.",
-  "ubicacion": "ubicación solo si está mencionada en el texto. Null si no se menciona.",
-  "descripcion": "copia exacta del texto original sin ninguna modificación, exactamente como fue recibido.",
-  "prioridad": "una de estas cuatro opciones exactas: baja, media, moderada, urgencia"
+  "nombre_dispositivo": "nombre o descripción del equipo médico si está claramente mencionado. Null si hay duda.",
+  "marca": "marca del equipo si está explícitamente escrita. Null si no se menciona.",
+  "modelo": "modelo del equipo si está explícitamente escrito. Null si no se menciona.",
+  "numero_serie": "número de serie si está explícitamente escrito. Null si no se menciona.",
+  "numero_control": "número de control o inventario si está explícitamente escrito. Null si no se menciona.",
+  "tipo_servicio": "preventivo si solicita mantenimiento preventivo, correctivo si reporta falla o problema. Null si no es claro.",
+  "tipo_baja": "una de: no_funcional, inservible, obsoleto, disposicion, traspaso, otro — solo si el texto indica que se solicita dar de baja el equipo. Null si no es una baja.",
+  "ubicacion": "ubicación física si está mencionada. Null si no se menciona.",
+  "prioridad": "una de: baja, media, moderada, urgencia"
 }
 
 Reglas estrictas:
-- NUNCA inventes, supongas ni inferras información que no esté escrita explícitamente
-- Si el equipo no se menciona con claridad, pon null. No adivines por el servicio o el contexto
-- Si la ubicación no se menciona, pon null. No uses el servicio como ubicación
-- El campo descripcion SIEMPRE debe ser el texto original exacto, sin ninguna modificación
+- NUNCA inventes ni inferras datos que no estén escritos explícitamente (excepto prioridad y tipo_servicio/tipo_baja que puedes inferir por contexto)
+- tipo_servicio y tipo_baja son mutuamente excluyentes: solo uno puede ser no-null
+- Si no es claro si es servicio o baja, ambos null
+- ubicacion null si no se menciona; no uses el servicio como ubicación
 
-Criterio de prioridad (único campo donde puedes inferir por contexto):
-- urgencia: equipo de soporte vital (ventilador, desfibrilador, monitor UCI), riesgo inmediato para el paciente
-- moderada: equipo importante para el diagnóstico o tratamiento, sin alternativa inmediata disponible
-- media: equipo diagnóstico o de monitoreo con alternativa disponible
-- baja: equipo administrativo, de confort, falla menor, o mensaje muy vago sin información suficiente
+Criterio de prioridad:
+- urgencia: equipo de soporte vital (ventilador, desfibrilador, monitor UCI), riesgo inmediato
+- moderada: equipo importante sin alternativa inmediata
+- media: equipo diagnóstico con alternativa disponible
+- baja: equipo administrativo, falla menor, o mensaje vago
 PROMPT;
 
         if (empty($this->apiKey)) {
@@ -71,8 +76,8 @@ PROMPT;
 
         try {
             $response = Http::timeout(30)->post("{$this->endpoint}?key={$this->apiKey}", [
-                'contents' => [['parts' => [['text' => $prompt]]]],
-                'generationConfig' => ['temperature' => 0.1, 'maxOutputTokens' => 4096],
+                'contents'         => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.1, 'maxOutputTokens' => 512],
             ]);
 
             if (! $response->successful()) {
@@ -92,21 +97,36 @@ PROMPT;
                 return $this->fallback($textoLibre, $servicioReportante);
             }
 
-            $prioridad = strtolower(trim($datos['prioridad'] ?? ''));
+            $prioridad     = strtolower(trim($datos['prioridad'] ?? ''));
+            $tipoServicio  = strtolower(trim($datos['tipo_servicio'] ?? ''));
+            $tipoBaja      = strtolower(trim($datos['tipo_baja'] ?? ''));
+
+            $validosTipoBaja = ['no_funcional','inservible','obsoleto','disposicion','traspaso','otro'];
 
             return [
-                'equipo'      => ! empty($datos['equipo']) && strtolower($datos['equipo']) !== 'null'
-                                    ? $datos['equipo'] : null,
-                'ubicacion'   => ! empty($datos['ubicacion']) ? $datos['ubicacion'] : $servicioReportante,
-                'descripcion' => ! empty($datos['descripcion']) ? $datos['descripcion'] : $textoLibre,
-                'prioridad'   => in_array($prioridad, ['baja','media','moderada','urgencia'])
-                                    ? $prioridad : 'baja',
+                'nombre_dispositivo' => $this->nullableStr($datos['nombre_dispositivo'] ?? null),
+                'marca'              => $this->nullableStr($datos['marca'] ?? null),
+                'modelo'             => $this->nullableStr($datos['modelo'] ?? null),
+                'numero_serie'       => $this->nullableStr($datos['numero_serie'] ?? null),
+                'numero_control'     => $this->nullableStr($datos['numero_control'] ?? null),
+                'tipo_servicio'      => in_array($tipoServicio, ['preventivo','correctivo']) ? $tipoServicio : null,
+                'tipo_baja'          => in_array($tipoBaja, $validosTipoBaja) ? $tipoBaja : null,
+                'ubicacion'          => $this->nullableStr($datos['ubicacion'] ?? null),
+                'prioridad'          => in_array($prioridad, ['baja','media','moderada','urgencia']) ? $prioridad : 'baja',
             ];
 
         } catch (\Exception $e) {
             Log::error('GeminiService::extraerDatosReporte excepción', ['error' => $this->safeError($e)]);
             return $this->fallback($textoLibre, $servicioReportante);
         }
+    }
+
+    private function nullableStr(mixed $val): ?string
+    {
+        if ($val === null || strtolower(trim((string) $val)) === 'null' || trim((string) $val) === '') {
+            return null;
+        }
+        return trim((string) $val);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -423,10 +443,15 @@ PROMPT;
     private function fallback(string $textoLibre, string $servicio): array
     {
         return [
-            'equipo'      => null,
-            'ubicacion'   => $servicio,
-            'descripcion' => $textoLibre,
-            'prioridad'   => 'baja',
+            'nombre_dispositivo' => null,
+            'marca'              => null,
+            'modelo'             => null,
+            'numero_serie'       => null,
+            'numero_control'     => null,
+            'tipo_servicio'      => null,
+            'tipo_baja'          => null,
+            'ubicacion'          => $servicio,
+            'prioridad'          => 'baja',
         ];
     }
 }

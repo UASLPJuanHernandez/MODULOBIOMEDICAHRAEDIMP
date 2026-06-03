@@ -6,9 +6,10 @@ use App\Filament\Resources\BitacoraReporteResource\Pages;
 use App\Models\BitacoraReporte;
 use App\Models\PersonalReportante;
 use App\Services\BitacoraDocxService;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -131,44 +132,62 @@ class BitacoraReporteResource extends Resource
                         ->required(),
                 ]),
 
-            Section::make('Descripción del reporte')
+            Section::make('Mensaje recibido')
                 ->schema([
-                    Textarea::make('mensaje_original')
+                    Placeholder::make('mensaje_preview')
                         ->label('Mensaje original del usuario')
-                        ->rows(4)
-                        ->disabled()
-                        ->dehydrated(),
+                        ->content(fn ($record) => $record?->reporte?->descripcion_original
+                            ?? $record?->mensaje_original
+                            ?? '—'),
                 ]),
 
-            Section::make('Acciones realizadas')
-                ->description('Agrega las acciones que se realizaron. Puedes incluir imagen y pie de imagen en cada una.')
+            Section::make('Justificación / Observaciones')
                 ->schema([
-                    Repeater::make('acciones')
+                    Actions::make([
+                        FormAction::make('pegar_mensaje')
+                            ->label('Pegar mensaje recibido')
+                            ->icon('heroicon-o-clipboard-document')
+                            ->color('gray')
+                            ->action(fn ($record, Set $set) => $set(
+                                'justificacion',
+                                $record?->mensaje_original ?? ''
+                            )),
+                    ]),
+                    Textarea::make('justificacion')
                         ->label('')
-                        ->schema([
-                            Textarea::make('texto')
-                                ->label('Acción realizada')
-                                ->rows(2)
-                                ->required(),
+                        ->rows(5)
+                        ->columnSpanFull(),
+                ]),
 
-                            FileUpload::make('imagen_path')
-                                ->label('Imagen (opcional)')
-                                ->image()
-                                ->directory('bitacoras/imagenes')
-                                ->nullable(),
-
-                            TextInput::make('pie_imagen')
-                                ->label('Pie de imagen')
-                                ->placeholder('Ej: Figura 1. Equipo después de la intervención'),
+            Section::make('SE SOLICITA')
+                ->description('Selecciona el tipo de servicio o la razón de baja. Solo se marca una opción.')
+                ->columns(2)
+                ->schema([
+                    Radio::make('tipo_servicio')
+                        ->label('Servicio')
+                        ->options([
+                            'preventivo' => 'Preventivo',
+                            'correctivo' => 'Correctivo',
                         ])
-                        ->columns(1)
-                        ->addActionLabel('+ Agregar acción')
-                        ->defaultItems(1)
-                        ->maxItems(10),
+                        ->live()
+                        ->afterStateUpdated(fn ($state, \Filament\Forms\Set $set) => $state ? $set('tipo_baja', null) : null),
+
+                    Radio::make('tipo_baja')
+                        ->label('Baja por')
+                        ->options([
+                            'no_funcional' => 'Por no ser funcional para el área',
+                            'inservible'   => 'Inservible',
+                            'obsoleto'     => 'Obsoleto',
+                            'disposicion'  => 'A disposición',
+                            'traspaso'     => 'Traspaso',
+                            'otro'         => 'Otro',
+                        ])
+                        ->live()
+                        ->afterStateUpdated(fn ($state, \Filament\Forms\Set $set) => $state ? $set('tipo_servicio', null) : null),
                 ]),
 
             Section::make('Resultado')
-                ->columns(2)
+                ->columns(1)
                 ->schema([
                     Select::make('resultado')
                         ->label('La solicitud fue resuelta de forma...')
@@ -177,15 +196,6 @@ class BitacoraReporteResource extends Resource
                             'parcial'          => 'Parcial',
                             'no_satisfactoria' => 'No satisfactoria',
                         ])
-                        ->required(),
-
-                    Radio::make('tipo_servicio')
-                        ->label('Tipo de servicio')
-                        ->options([
-                            'preventivo'  => 'Preventivo',
-                            'correctivo'  => 'Correctivo',
-                        ])
-                        ->inline()
                         ->required(),
                 ]),
 

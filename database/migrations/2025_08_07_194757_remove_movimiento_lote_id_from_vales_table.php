@@ -7,13 +7,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('vales', function (Blueprint $table) {
-            if (Schema::hasColumn('vales', 'movimiento_lote_id')) {
-                try { $table->dropForeign(['movimiento_lote_id']); } catch (\Exception $e) {}
-                try { $table->dropIndex(['movimiento_lote_id']); } catch (\Exception $e) {}
+        if (Schema::hasColumn('vales', 'movimiento_lote_id')) {
+            Schema::disableForeignKeyConstraints();
+            Schema::table('vales', function (Blueprint $table) {
                 $table->dropColumn('movimiento_lote_id');
-            }
-        });
+            });
+            Schema::enableForeignKeyConstraints();
+        }
     }
 
     public function down(): void

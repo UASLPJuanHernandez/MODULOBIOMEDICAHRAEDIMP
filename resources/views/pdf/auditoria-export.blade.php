@@ -77,7 +77,6 @@ table.data tr:nth-child(even) td { background: #f0f0f0; }
     <tr>
         <td><div class="stat-num">{{ $stats['total_firmas'] }}</div><div class="stat-label">Total firmas</div></td>
         <td><div class="stat-num">{{ $stats['total_vales'] }}</div><div class="stat-label">Total vales</div></td>
-        <td><div class="stat-num">{{ $stats['vales_en_proceso'] }}</div><div class="stat-label">Vales en proceso</div></td>
         <td><div class="stat-num">{{ $stats['usuarios_activos'] }}</div><div class="stat-label">Usuarios activos</div></td>
         <td><div class="stat-num">{{ $stats['pendientes'] }}</div><div class="stat-label">Pendientes aprobación</div></td>
     </tr>

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ValeInventarioResource\Pages;
 
+use App\Filament\Pages\DocumentosGenerados;
 use App\Filament\Resources\ValeInventarioResource;
 use App\Models\InventarioEquipo;
 use App\Models\PersonalReportante;
@@ -13,7 +14,7 @@ class CreateValeInventario extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return ValeInventarioResource::getUrl('index');
+        return DocumentosGenerados::getUrl();
     }
 
     public function mount(): void

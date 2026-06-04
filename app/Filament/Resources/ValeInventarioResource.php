@@ -249,7 +249,6 @@ class ValeInventarioResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'     => Pages\ListValeInventarios::route('/'),
             'create'    => Pages\CreateValeInventario::route('/create'),
             'concretar' => Pages\ConcretarVale::route('/{record}/concretar'),
             'firmar'    => Pages\FirmarVale::route('/{record}/firmar'),

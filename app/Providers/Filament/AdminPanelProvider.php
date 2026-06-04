@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('biomedica')
             ->brandName('Área de Ingeniería Biomédica')
             ->colors([
                 'primary' => Color::hex('#BC955C'),

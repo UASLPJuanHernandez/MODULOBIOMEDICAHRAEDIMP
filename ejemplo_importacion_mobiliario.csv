@@ -1,6 +1,0 @@
-numero_control,numero_inventario,clasificacion_bienes_id,caracteristicas,descripcion,marca,modelo,numero_serie,precio,tipo_mobiliario_id,localizacion_id,proveedor_id,metodo_adquisicion,tiene_folio,numero_folio,estado_mobiliario,tiene_accesorios,descripcion_accesorios,dado_de_baja,fecha_baja,motivo_baja
-MOB-2024-001,INV-2023-100,1,"Color negro, material plástico, ajustable","Silla ejecutiva ergonómica con soporte lumbar",Herman Miller,Aeron Classic,SN123456789,15000.00,1,1,1,Compra directa,1,FOL-2024-001,Nuevo,1,"Mouse inalámbrico y teclado mecánico",0,,
-MOB-2024-002,,2,"Pantalla LED 24 pulgadas, resolución Full HD","Monitor LED para oficina",Dell,P2419H,SN789012345,8500.50,2,1,1,Compra directa,1,FOL-2024-002,Nuevo,0,,0,,
-MOB-2024-003,INV-2023-101,1,"Material metálico, color gris, con cajones","Escritorio ejecutivo con tres cajones",Steelcase,Series 7,SN345678901,25000.00,1,2,,Donación,0,,Usado,0,,0,,
-MOB-2024-004,,3,"Pantalla táctil, procesador i5, 8GB RAM"este,"Computadora All-in-One",HP,EliteOne 800 G5,SN456789012,35000.00,2,1,2,Compra por licitación,1,FOL-2024-003,Nuevo,1,"Mouse y teclado incluidos",0,,
-MOB-2024-005,INV-2022-450,4,"Material de cuero sintético, color negro","Sillón para sala de espera",Mobel,Confort Plus,SN567890123,4500.00,3,3,3,Compra directa,0,,Restaurado,0,,0,,

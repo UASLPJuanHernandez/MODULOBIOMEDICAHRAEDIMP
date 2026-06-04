@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InventarioEquipoResource\Pages;
 
 use App\Filament\Resources\InventarioEquipoResource;
+use App\Filament\Resources\ValeInventarioResource;
 use App\Services\ValeEntregaService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -23,19 +24,11 @@ class ViewInventarioEquipo extends ViewRecord
         return [
             Actions\EditAction::make(),
 
-            Actions\Action::make('vale_entrega')
-                ->label('Vale de Entrega')
-                ->icon('heroicon-o-document-arrow-down')
+            Actions\Action::make('crear_vale')
+                ->label('Crear Vale')
+                ->icon('heroicon-o-document-plus')
                 ->color('warning')
-                ->url(fn () => route('inventario.equipo.vale-entrega', $this->record))
-                ->openUrlInNewTab(),
-
-            Actions\Action::make('vale_retiro')
-                ->label('Vale de Retiro')
-                ->icon('heroicon-o-document-minus')
-                ->color('danger')
-                ->url(fn () => route('inventario.equipo.vale-retiro', $this->record))
-                ->openUrlInNewTab(),
+                ->url(fn () => ValeInventarioResource::getUrl('create', ['equipo_id' => $this->record->id])),
 
             Actions\Action::make('descargar_historial_pdf')
                 ->label('Historial PDF')

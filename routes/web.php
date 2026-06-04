@@ -18,7 +18,7 @@ Route::post('/simple-login', [SimpleLoginController::class, 'login'])->name('sim
 Route::post('/simple-logout', [SimpleLoginController::class, 'logout'])->name('simple.logout');
 
 // Redirigir login principal al simplificado
-Route::get('/admin/login', function() {
+Route::get('/biomedica/login', function() {
     return redirect('/simple-login');
 });
 
@@ -92,7 +92,7 @@ Route::get('/pizarron/eventos', function () {
 })->middleware('auth');
 
 // Rutas para Filament Admin
-Route::get('/admin/vales/create-from-movimiento/{movimiento_id}', function ($movimiento_id) {
+Route::get('/biomedica/vales/create-from-movimiento/{movimiento_id}', function ($movimiento_id) {
     return redirect()->route('filament.admin.resources.vales.create', [
         'movimiento_id' => $movimiento_id
     ]);
@@ -172,7 +172,7 @@ Route::prefix('reportes')->name('portal.')->group(function () {
 });
 
 // PDF de vale de consumible
-Route::get('/admin/consumible-vale-pdf/{vale}', function (\App\Models\ValeInventario $vale) {
+Route::get('/biomedica/consumible-vale-pdf/{vale}', function (\App\Models\ValeInventario $vale) {
     abort_unless(auth()->check() && $vale->consumible_id, 403);
     $c   = $vale->consumible;
     $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.consumible-vale', [
@@ -182,8 +182,8 @@ Route::get('/admin/consumible-vale-pdf/{vale}', function (\App\Models\ValeInvent
         'marca'          => $vale->marca      ?? '',
         'referencia'     => $vale->modelo     ?? '',
         'cantidad'       => $vale->cantidad_entregada ?? '—',
-        'nombre_entrega' => $vale->usuario_nombre ?? '',
-        'cargo_entrega'  => '',
+        'nombre_entrega' => $vale->nombre_entrega ?? '',
+        'cargo_entrega'  => $vale->cargo_entrega  ?? '',
         'nombre_recibe'  => $vale->quien_recibe  ?? '',
         'cargo_recibe'   => $vale->cargo_recibe  ?? '',
         'observaciones'  => $vale->observaciones ?? '',
@@ -196,12 +196,12 @@ Route::get('/admin/consumible-vale-pdf/{vale}', function (\App\Models\ValeInvent
 })->name('admin.consumible.vale.pdf')->middleware('auth');
 
 // Exportación PDF de estadísticas de ingeniería
-Route::get('/admin/estadisticas-ingenieria/exportar-pdf', [App\Http\Controllers\EstadisticasIngenieriaController::class, 'exportarPdf'])
+Route::get('/biomedica/estadisticas-ingenieria/exportar-pdf', [App\Http\Controllers\EstadisticasIngenieriaController::class, 'exportarPdf'])
     ->name('admin.estadisticas-ingenieria.pdf')
     ->middleware('auth');
 
 // Exportación PDF de auditoría (solo admins autenticados)
-Route::get('/admin/auditoria/exportar-pdf', [App\Http\Controllers\AuditoriaController::class, 'exportarPdf'])
+Route::get('/biomedica/auditoria/exportar-pdf', [App\Http\Controllers\AuditoriaController::class, 'exportarPdf'])
     ->name('admin.auditoria.pdf')
     ->middleware('auth');
 

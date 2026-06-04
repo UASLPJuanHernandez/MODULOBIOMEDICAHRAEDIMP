@@ -26,7 +26,10 @@ class AuditService
                 'documento_tipo' => $opts['documento_tipo'] ?? null,
                 'documento_id'   => $opts['documento_id']   ?? null,
                 'ip'             => request()?->ip(),
-                'metadata'       => $opts['metadata']       ?? null,
+                'metadata'       => array_filter(array_merge(
+                                       $opts['metadata'] ?? [],
+                                       isset($opts['origen']) ? ['origen' => $opts['origen']] : []
+                                   )) ?: null,
             ]);
         } catch (\Throwable $e) {
             Log::warning('AuditService::log falló: ' . $e->getMessage());

@@ -25,6 +25,8 @@ class ValeInventario extends Model
         'numero_serie',
         'usuario_id',
         'usuario_nombre',
+        'nombre_entrega',
+        'cargo_entrega',
         'quien_recibe',
         'cargo_recibe',
         'equipos',

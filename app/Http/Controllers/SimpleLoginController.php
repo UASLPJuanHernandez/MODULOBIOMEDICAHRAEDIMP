@@ -14,9 +14,9 @@ class SimpleLoginController extends Controller
     {
         // Si ya está autenticado, redirigir al admin
         if (Auth::check()) {
-            return redirect('/admin');
+            return redirect('/biomedica');
         }
-        
+
         return view('simple-login');
     }
     
@@ -35,14 +35,14 @@ class SimpleLoginController extends Controller
             // Verificar que el usuario está autenticado
             if (Auth::check()) {
                 $user = Auth::user();
-                AuditService::log('acceso', "Inicio de sesión en /admin — {$user->name}", [
+                AuditService::log('acceso', "Inicio de sesión en /biomedica — {$user->name}", [
                     'actor_tipo'   => 'admin',
                     'actor_id'     => $user->id,
                     'actor_nombre' => $user->name,
-                    'origen'       => '/admin',
+                    'origen'       => '/biomedica',
                 ]);
 
-                return redirect('/admin')->with('success', 'Acceso autorizado correctamente');
+                return redirect('/biomedica')->with('success', 'Acceso autorizado correctamente');
             }
         }
 

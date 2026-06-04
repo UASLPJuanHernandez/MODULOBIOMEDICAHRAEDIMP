@@ -172,6 +172,59 @@
 
 
     <script>
+        // ── Audio via WAV generado en memoria ────────────────────────────────
+        function makeWav(freq, dur, vol) {
+            var rate     = 44100;
+            var samples  = Math.floor(rate * dur);
+            var buf      = new ArrayBuffer(44 + samples * 2);
+            var v        = new DataView(buf);
+            var s        = function(o, str) { for (var i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+            s(0,'RIFF'); v.setUint32(4, 36 + samples*2, true);
+            s(8,'WAVE'); s(12,'fmt ');
+            v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+            v.setUint32(24,rate,true); v.setUint32(28,rate*2,true);
+            v.setUint16(32,2,true); v.setUint16(34,16,true);
+            s(36,'data'); v.setUint32(40, samples*2, true);
+            for (var i = 0; i < samples; i++) {
+                var t   = i / rate;
+                var env = 1 - t / dur;
+                v.setInt16(44 + i*2, Math.round(Math.sin(2*Math.PI*freq*t) * env * (vol||0.3) * 32767), true);
+            }
+            return URL.createObjectURL(new Blob([buf], {type:'audio/wav'}));
+        }
+
+        function playBeep(freq, dur, vol, delayMs) {
+            setTimeout(function() {
+                var url   = makeWav(freq, dur, vol);
+                var audio = new Audio(url);
+                audio.play().catch(function(){});
+                audio.onended = function() { URL.revokeObjectURL(url); };
+            }, delayMs || 0);
+        }
+
+        function playSound(prioridad) {
+            switch (prioridad) {
+                case 'baja':
+                    playBeep(440, 0.4, 0.3, 0);
+                    break;
+                case 'media':
+                    playBeep(523, 0.25, 0.3, 0);
+                    playBeep(523, 0.25, 0.3, 350);
+                    break;
+                case 'moderada':
+                    playBeep(659, 0.2, 0.4, 0);
+                    playBeep(659, 0.2, 0.4, 280);
+                    playBeep(659, 0.2, 0.4, 560);
+                    break;
+                case 'urgencia':
+                    for (var i = 0; i < 5; i++) {
+                        playBeep(i % 2 === 0 ? 880 : 1100, 0.15, 0.5, i * 200);
+                    }
+                    break;
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         var lastCount    = {{ $reportes->count() }};
         var enCalendario = false;
         var tick         = 0;
@@ -272,9 +325,17 @@
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.count !== lastCount) {
+                        var esNuevo = data.count > lastCount;
                         lastCount = data.count;
                         registrarActividad();
                         if (!enSalvapantallas) mostrarPizarron();
+                        // Solo sonar si llegó un reporte nuevo (no si se eliminó)
+                        if (esNuevo) {
+                            fetch('/pizarron/nuevos')
+                                .then(function(r) { return r.json(); })
+                                .then(function(d) { if (d.prioridad) playSound(d.prioridad); })
+                                .catch(function(){});
+                        }
                     }
                 })
                 .catch(function() {});

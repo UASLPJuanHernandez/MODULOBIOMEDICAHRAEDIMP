@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Acceso - Sistema de Activo Fijo</title>
+    <title>Acceso - Ingeniería Biomédica</title>
     <style>
         * {
             margin: 0;
@@ -183,7 +183,7 @@
                     </div>
                 </div>
             </div>
-            <h1 style="font-size: 20px; margin-bottom: 5px;">Sistema de Activo Fijo</h1>
+            <h1 style="font-size: 20px; margin-bottom: 5px;">Ingeniería Biomédica</h1>
             <p style="opacity: 0.9; font-size: 14px;">Ingrese sus credenciales para acceder</p>
         </div>
         

@@ -362,9 +362,9 @@
                         @endif
                     </td>
                     <td class="px-4 py-2.5">
-                        @if($origen === '/admin')
+                        @if($origen === '/biomedica')
                             <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-                                /admin
+                                /biomedica
                             </span>
                         @elseif($origen === '/reportes')
                             <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InventarioEquipoResource\Pages;
 
 use App\Exports\InventarioEquipoExport;
 use App\Filament\Resources\InventarioEquipoResource;
+use App\Filament\Resources\ValeInventarioResource;
 use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -20,6 +21,11 @@ class ListInventarioEquipos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('crear_vale')
+                ->label('Crear Vale')
+                ->icon('heroicon-o-document-plus')
+                ->color('warning')
+                ->url(fn () => ValeInventarioResource::getUrl('create')),
             Action::make('historial_general')
                 ->label('Historial General')
                 ->icon('heroicon-o-clock')

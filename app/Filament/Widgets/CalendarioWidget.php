@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\EventoCalendario;
+use App\Models\Ingeniero;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -149,18 +150,7 @@ class CalendarioWidget extends FullCalendarWidget
 
                     Select::make('responsable')
                         ->label('Responsable')
-                        ->options([
-                            'Ing. María'      => 'Ing. María',
-                            'Ing. Renata'     => 'Ing. Renata',
-                            'Ing. María José' => 'Ing. María José',
-                            'Ing. Ana Julia'  => 'Ing. Ana Julia',
-                            'Ing. Daniela'    => 'Ing. Daniela',
-                            'Ing. Flor'       => 'Ing. Flor',
-                            'Ing. Pedro'      => 'Ing. Pedro',
-                            'Ing. Sergio'     => 'Ing. Sergio',
-                            'Ing. José'       => 'Ing. José',
-                            'Ing. Juan Pablo' => 'Ing. Juan Pablo',
-                        ])
+                        ->options(fn () => Ingeniero::orderBy('nombre')->pluck('nombre', 'nombre'))
                         ->searchable(),
 
                     TextInput::make('ubicacion')

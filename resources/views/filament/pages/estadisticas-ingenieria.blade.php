@@ -40,10 +40,17 @@
             <h1 style="font-size:21px;font-weight:700;color:#111827;margin:0 0 4px;">Estadísticas — Ingeniería Biomédica</h1>
             <p style="font-size:12px;color:#9ca3af;margin:0;">Datos al {{ now()->format('d/m/Y H:i') }}</p>
         </div>
-        <a href="{{ \App\Filament\Resources\IngenierResource::getUrl() }}"
-           style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:500;color:#374151;text-decoration:none;">
-            ← Volver a Ingenieros
-        </a>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <a href="{{ route('admin.estadisticas-ingenieria.pdf') }}"
+               target="_blank"
+               style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:#dc2626;border:1px solid #b91c1c;border-radius:8px;font-size:13px;font-weight:500;color:#fff;text-decoration:none;">
+                ↓ Descargar PDF
+            </a>
+            <a href="{{ \App\Filament\Resources\IngenierResource::getUrl() }}"
+               style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:500;color:#374151;text-decoration:none;">
+                ← Volver a Ingenieros
+            </a>
+        </div>
     </div>
 
     {{-- TABS ─ segmented control con más separación --}}

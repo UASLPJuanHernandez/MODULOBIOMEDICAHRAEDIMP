@@ -507,8 +507,12 @@ class DocumentosGenerados extends Page
         $vale = ValeInventario::find($valeId);
         if (! $vale) return;
 
+        // Los vales de consumible ya tienen todos los datos completos desde el formulario;
+        // se omite ConcretarVale (formulario de equipos) y se va directo a firma.
+        $page = $vale->consumible_id ? 'firmar' : 'concretar';
+
         $this->redirect(
-            \App\Filament\Resources\ValeInventarioResource::getUrl('concretar', ['record' => $vale])
+            \App\Filament\Resources\ValeInventarioResource::getUrl($page, ['record' => $vale])
         );
     }
 }

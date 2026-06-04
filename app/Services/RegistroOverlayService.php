@@ -39,6 +39,7 @@ class RegistroOverlayService
             $orientation = $pw > $ph ? 'L' : 'P';
 
             $pdf->AddPage($orientation, [$pw, $ph]);
+            $pdf->SetAutoPageBreak(false);
             $pdf->useTemplate($tplId);
 
             $pdf->SetFont('Arial', '', 9);
@@ -61,8 +62,9 @@ class RegistroOverlayService
                 if ($tipo === 'firma' || $tipo === 'firma_jefe') {
                     $this->imagen($pdf, $valor, $x, $y, $w, $h);
                 } else {
+                    // Cell en lugar de MultiCell para evitar desborde a páginas en blanco
                     $pdf->SetXY($x, $y);
-                    $pdf->MultiCell($w, 4, $this->limpiar($valor), 0, 'L');
+                    $pdf->Cell($w, $h, $this->limpiar($valor), 0, 0, 'L');
                 }
             }
 
@@ -75,7 +77,8 @@ class RegistroOverlayService
 
                 $firmaImg = $firmaJefe['firma_svg'] ?? '';
                 if ($firmaImg) {
-                    $this->imagen($pdf, $firmaImg, $x, $y, $w, $h);
+                    // h=0 → FPDF calcula la altura respetando el aspect ratio de la imagen
+                    $this->imagen($pdf, $firmaImg, $x, $y, $w, 0);
                 }
             }
         }

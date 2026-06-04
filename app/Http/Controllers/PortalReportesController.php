@@ -40,6 +40,10 @@ class PortalReportesController extends Controller
             return back()->withErrors(['numero_empleado' => 'Número de empleado o contraseña incorrectos.'])->withInput();
         }
 
+        if ($personal->estado !== 'aprobado') {
+            return back()->withErrors(['numero_empleado' => 'Tu cuenta aún no ha sido aprobada por el administrador.'])->withInput();
+        }
+
         Auth::guard('personal')->login($personal, $request->boolean('remember'));
 
         AuditService::log('acceso', "Inicio de sesión en /reportes — {$personal->nombre}", [
@@ -112,7 +116,7 @@ class PortalReportesController extends Controller
             'horario_fin'        => $request->horario_fin,
         ]);
 
-        return redirect('/admin/personal-reportantes')
+        return redirect('/biomedica/personal-reportantes')
             ->with('success', 'Usuario registrado correctamente.');
     }
 

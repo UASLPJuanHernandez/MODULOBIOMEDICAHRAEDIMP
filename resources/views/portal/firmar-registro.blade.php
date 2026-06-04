@@ -313,6 +313,7 @@
     var firmaForm  = document.getElementById('firma-form');
 
     var firmaColocada  = false;
+    var manualResized  = false;
     var isDragging     = false;
     var dragStartX, dragStartY, dragStartLeft, dragStartTop;
 
@@ -436,9 +437,17 @@
         var pgRect = bestPg.getBoundingClientRect();
         var pagesRect = pdfPages.getBoundingClientRect();
 
-        /* Posición del clic relativa a pdfPages (firma-drag es hijo de pdfPages,
-           así que su top/left es relativo a ese contenedor; pagesRect ya refleja
-           el scroll, no hay que sumarlo de nuevo) */
+        // Auto-tamaño proporcional a la imagen real (solo la primera vez, no si el usuario redimensionó)
+        if (!manualResized) {
+            var fImg = firmaDrag.querySelector('img');
+            var natW = (fImg && fImg.naturalWidth)  || 200;
+            var natH = (fImg && fImg.naturalHeight) || 70;
+            var wPx  = Math.min(pgRect.width * 0.20, natW);
+            var hPx  = wPx * (natH / natW);
+            firmaDrag.style.width  = wPx + 'px';
+            firmaDrag.style.height = hPx + 'px';
+        }
+
         var leftInPages = (clickX - pagesRect.left) - (firmaDrag.offsetWidth  / 2);
         var topInPages  = (clickY - pagesRect.top)  - (firmaDrag.offsetHeight / 2);
 
@@ -527,7 +536,7 @@
         resizeHandle.addEventListener('mousedown', function (e) {
             e.stopPropagation();
             e.preventDefault();
-            isResizing = true;
+            isResizing = true; manualResized = true;
             resStartX  = e.clientX;
             resStartY  = e.clientY;
             resStartW  = firmaDrag.offsetWidth;
@@ -537,7 +546,7 @@
         resizeHandle.addEventListener('touchstart', function (e) {
             e.stopPropagation();
             var t = e.touches[0];
-            isResizing = true;
+            isResizing = true; manualResized = true;
             resStartX  = t.clientX;
             resStartY  = t.clientY;
             resStartW  = firmaDrag.offsetWidth;

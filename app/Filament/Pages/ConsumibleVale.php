@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Consumible;
+use App\Models\PersonalReportante;
 use App\Models\ValeInventario;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
@@ -22,10 +23,24 @@ class ConsumibleVale extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon         = null;
+    protected static ?string $navigationIcon          = null;
     protected static bool    $shouldRegisterNavigation = false;
     protected static string  $view = 'filament.pages.consumible-vale';
     protected static ?string $title = 'Vale de Entrega — Material / Consumible';
+
+    private static array $AREAS = [
+        'Audiología','Anestesiología','Banco de Sangre','Banco de Leches',
+        'Cardiología','CEYE','Cirugía Ambulatoria','Cirugías','Clínica de catéter',
+        'Clínica displacías','Consultorio pediatría','Consultorio ginecología',
+        'Crecimiento y desarrollo','Cuidados intermedios','Dermatología','Dietología',
+        'Endoscopia','Farmacia','Ginecología y obstetricia','Hemodiálisis','Hemodinamia',
+        'Imagenología','Inhaloterapia','Laboratorio','Lactantes','Maxilofacial',
+        'Neonatología','Medicina interna','Neurología','Oncología adultos',
+        'Oncología pediátrica','Oftalmología','Ortopedia','Otorrinolaringología',
+        'Patología','Pediatría','Quemados','Quirófano','Radioterapia','Rehabilitación',
+        'Reumatología','Somatometría','Tococirugía','Trasplantes',
+        'UCIA','UCIN','UCIN aislados','UCIP','Urgencias',
+    ];
 
     public ?array $data = [];
 
@@ -36,6 +51,8 @@ class ConsumibleVale extends Page implements HasForms
 
     public function form(Form $form): Form
     {
+        $areas = array_combine(self::$AREAS, self::$AREAS);
+
         return $form
             ->schema([
                 Section::make('Consumible a entregar')
@@ -95,6 +112,25 @@ class ConsumibleVale extends Page implements HasForms
                             ->minValue(1)
                             ->default(1)
                             ->required(),
+                    ]),
+
+                Section::make('Área / Servicio destino')
+                    ->schema([
+                        Select::make('area')
+                            ->label('Área o Servicio')
+                            ->options($areas)
+                            ->searchable()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set) {
+                                if (! $state) return;
+                                $jefe = PersonalReportante::where('es_jefe_servicio', true)
+                                    ->where('area_jefe_servicio', $state)
+                                    ->value('nombre');
+                                if ($jefe) {
+                                    $set('nombre_recibe', $jefe);
+                                }
+                            }),
                     ]),
 
                 Section::make('Quien entrega')
@@ -158,13 +194,15 @@ class ConsumibleVale extends Page implements HasForms
             'modelo'               => $consumible->referencia ?? '',
             'numero_inventario'    => $consumible->referencia ?? '',
             'numero_serie'         => '',
-            'area'                 => '',
+            'area'                 => $d['area'] ?? '',
             'unidad_medica'        => '',
             'quien_recibe'         => $d['nombre_recibe'] ?? '',
             'cargo_recibe'         => $d['cargo_recibe']  ?? '',
             'observaciones'        => $d['observaciones'] ?? '',
             'usuario_id'           => Auth::id(),
             'usuario_nombre'       => Auth::user()?->name ?? 'Sistema',
+            'nombre_entrega'       => $d['nombre_entrega'] ?? '',
+            'cargo_entrega'        => $d['cargo_entrega']  ?? '',
         ]);
 
         Notification::make()

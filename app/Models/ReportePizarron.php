@@ -24,6 +24,13 @@ class ReportePizarron extends Model
         'personal_reportante_id',
         'reportante_nombre',
         'reportante_servicio',
+        'nombre_dispositivo',
+        'marca',
+        'modelo',
+        'numero_serie',
+        'numero_control',
+        'tipo_servicio',
+        'tipo_baja',
     ];
 
     protected $casts = [

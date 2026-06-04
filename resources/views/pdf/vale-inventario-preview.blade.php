@@ -209,7 +209,14 @@
             </div>
             <div class="sig-line">
                 ENTREGA<br>
-                <span style="font-weight:normal;">Ingeniería Biomédica</span>
+                <span style="font-weight:normal;">
+                    @if($vale->nombre_entrega)
+                        {{ $vale->nombre_entrega }}
+                        @if($vale->cargo_entrega)<br>{{ $vale->cargo_entrega }}@endif
+                    @else
+                        Ingeniería Biomédica
+                    @endif
+                </span>
             </div>
         </div>
         <div class="sig-box">

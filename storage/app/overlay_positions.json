@@ -1,0 +1,202 @@
+{
+    "textos": [
+        {
+            "key": "area_departamento",
+            "label": "Área \/ Departamento",
+            "x": 9.5,
+            "y": 33,
+            "w": 53,
+            "h": 10,
+            "align": "L"
+        },
+        {
+            "key": "nombre_dispositivo",
+            "label": "Descripción equipo",
+            "x": 62.5,
+            "y": 33,
+            "w": 91,
+            "h": 10,
+            "align": "L"
+        },
+        {
+            "key": "fecha_hora",
+            "label": "Fecha y Hora",
+            "x": 153.5,
+            "y": 33,
+            "w": 52.5,
+            "h": 10,
+            "align": "C"
+        },
+        {
+            "key": "marca",
+            "label": "Marca",
+            "x": 9.5,
+            "y": 48.5,
+            "w": 53,
+            "h": 10,
+            "align": "C"
+        },
+        {
+            "key": "modelo",
+            "label": "Modelo",
+            "x": 62.5,
+            "y": 48,
+            "w": 45.5,
+            "h": 10.5,
+            "align": "C"
+        },
+        {
+            "key": "numero_serie",
+            "label": "N° Serie",
+            "x": 107.5,
+            "y": 48,
+            "w": 58.5,
+            "h": 10.2,
+            "align": "C"
+        },
+        {
+            "key": "numero_control",
+            "label": "N° Control",
+            "x": 166.5,
+            "y": 48,
+            "w": 39.5,
+            "h": 10,
+            "align": "C"
+        },
+        {
+            "key": "fecha_hora_finalizado",
+            "label": "Fecha Finalizado",
+            "x": 172,
+            "y": 109,
+            "w": 32.5,
+            "h": 3.5,
+            "align": "C"
+        },
+        {
+            "key": "nombre_personal",
+            "label": "Solicita (nombre)",
+            "x": 10.5,
+            "y": 117,
+            "w": 67,
+            "h": 4,
+            "align": "C"
+        },
+        {
+            "key": "atiende_nombre",
+            "label": "Recibe Biomédica",
+            "x": 128,
+            "y": 117,
+            "w": 74,
+            "h": 4,
+            "align": "C"
+        }
+    ],
+    "justificacion": {
+        "x": 10,
+        "y": 83,
+        "w": 195,
+        "h": 15.5,
+        "lineH": 5
+    },
+    "justificacion2": {
+        "x": 10,
+        "y": 99,
+        "w": 136.5,
+        "h": 15,
+        "lineH": 5
+    },
+    "ovalos": [
+        {
+            "key": "preventivo",
+            "label": "Preventivo",
+            "cx": 19.5,
+            "cy": 71,
+            "rx": 8.5
+        },
+        {
+            "key": "correctivo",
+            "label": "Correctivo",
+            "cx": 39,
+            "cy": 71,
+            "rx": 9.5
+        },
+        {
+            "key": "no_funcional",
+            "label": "No funcional",
+            "cx": 61.5,
+            "cy": 71.5,
+            "rx": 15.5
+        },
+        {
+            "key": "inservible",
+            "label": "Inservible",
+            "cx": 90.5,
+            "cy": 71,
+            "rx": 9
+        },
+        {
+            "key": "obsoleto",
+            "label": "Obsoleto",
+            "cx": 124,
+            "cy": 71.5,
+            "rx": 7
+        },
+        {
+            "key": "disposicion",
+            "label": "A Disposición",
+            "cx": 150,
+            "cy": 71.5,
+            "rx": 9
+        },
+        {
+            "key": "traspaso",
+            "label": "Traspaso",
+            "cx": 169.5,
+            "cy": 72,
+            "rx": 6
+        },
+        {
+            "key": "otro",
+            "label": "Otro",
+            "cx": 192.5,
+            "cy": 72,
+            "rx": 9
+        }
+    ],
+    "checkboxes": [
+        {
+            "key": "si",
+            "label": "Finalizado SI",
+            "x": 175,
+            "y": 104.5,
+            "w": 3,
+            "h": 3
+        },
+        {
+            "key": "no",
+            "label": "Finalizado NO",
+            "x": 188,
+            "y": 105,
+            "w": 2.5,
+            "h": 2.5
+        }
+    ],
+    "firmas": [
+        {
+            "key": "firma_solicita",
+            "label": "Firma Solicita",
+            "x": 15,
+            "y": 110,
+            "w": 55,
+            "h": 14
+        },
+        {
+            "key": "firma_ingeniero",
+            "label": "Firma Ingeniero",
+            "x": 136,
+            "y": 110,
+            "w": 55,
+            "h": 14
+        }
+    ]
+}

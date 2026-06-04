@@ -9,8 +9,8 @@ return new class extends Migration
     {
         Schema::table('vales', function (Blueprint $table) {
             if (Schema::hasColumn('vales', 'movimiento_lote_id')) {
-                try { $table->dropIndex(['movimiento_lote_id']); } catch (\Exception $e) {}
                 try { $table->dropForeign(['movimiento_lote_id']); } catch (\Exception $e) {}
+                try { $table->dropIndex(['movimiento_lote_id']); } catch (\Exception $e) {}
                 $table->dropColumn('movimiento_lote_id');
             }
         });

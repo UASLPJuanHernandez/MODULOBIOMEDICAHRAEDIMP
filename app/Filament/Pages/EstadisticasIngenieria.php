@@ -24,7 +24,7 @@ class EstadisticasIngenieria extends Page
 
     public function getHeading(): string
     {
-        return '';
+        return 'Estadísticas de Ingeniería';
     }
 
     public function getEstadisticasData(): array

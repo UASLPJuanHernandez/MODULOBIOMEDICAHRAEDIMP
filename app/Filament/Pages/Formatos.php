@@ -30,7 +30,7 @@ class Formatos extends Page
 
     public function getHeading(): string
     {
-        return '';
+        return 'Formatos';
     }
 
     // ---------------------------------------------------------------

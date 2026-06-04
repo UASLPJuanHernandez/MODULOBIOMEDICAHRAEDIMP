@@ -25,11 +25,6 @@ class Dashboard extends BaseDashboard
     public string $nr_reportante_nombre   = '';
     public string $nr_reportante_servicio = '';
 
-    public function getHeading(): string
-    {
-        return '';
-    }
-
     public function getWidgets(): array
     {
         return [];

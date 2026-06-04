@@ -15,6 +15,6 @@ class Calendario extends Page
 
     public function getHeading(): string
     {
-        return '';
+        return 'Calendario';
     }
 }

@@ -68,7 +68,7 @@ class DocumentosGenerados extends Page
 
     public function getHeading(): string
     {
-        return '';
+        return 'Documentos generados';
     }
 
     // ---------------------------------------------------------------

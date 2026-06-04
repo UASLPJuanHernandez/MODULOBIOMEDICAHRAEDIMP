@@ -1,8 +1,7 @@
 /* Colores personalizados para el sistema de inventario hospitalario */
 
-/* Header personalizado - Color dorado */
+/* Header personalizado - Color dorado (solo topbar, NO el encabezado de página) */
 .fi-topbar,
-.fi-header,
 .fi-simple-header,
 .fi-navbar {
     background-color: #BC955C !important;
@@ -10,9 +9,19 @@
 }
 
 .fi-topbar .fi-topbar-item,
-.fi-header .fi-header-item,
 .fi-navbar .fi-navbar-item {
     color: white !important;
+}
+
+/* Encabezado de página: sin fondo, texto grande */
+.fi-header {
+    background: transparent !important;
+}
+
+.fi-header-heading {
+    font-size: 2.25rem !important;
+    font-weight: 800 !important;
+    color: #111827 !important;
 }
 
 /* Navegación sidebar */

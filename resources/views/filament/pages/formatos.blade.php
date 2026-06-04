@@ -5,8 +5,7 @@
 {{-- ================================================================ --}}
 @if($vista === 'lista')
 
-<div class="flex items-center justify-between mb-5">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Formatos</h2>
+<div class="flex items-center justify-end mb-5">
     <div class="flex items-center gap-2">
         @if(auth()->user()->esJefeServicio())
         <button wire:click="abrirModalMantenimientos"

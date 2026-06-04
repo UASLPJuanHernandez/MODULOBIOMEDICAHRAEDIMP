@@ -19,9 +19,8 @@ class HospitalThemeServiceProvider extends ServiceProvider
             'panels::head.end',
             fn (): string => Blade::render('
                 <style>
-                    /* Header personalizado - Color dorado */
+                    /* Header personalizado - Color dorado (solo topbar, NO encabezado de página) */
                     .fi-topbar,
-                    .fi-header,
                     .fi-simple-header,
                     .fi-navbar,
                     .fi-sidebar-header {
@@ -29,11 +28,49 @@ class HospitalThemeServiceProvider extends ServiceProvider
                         border-bottom-color: #BC955C !important;
                     }
 
+                    /* En móvil el nav interno del topbar tiene bg-white — sobreescribir solo en pantalla chica */
+                    @media (max-width: 1023px) {
+                        .fi-topbar nav {
+                            background-color: #BC955C !important;
+                        }
+                    }
+
                     .fi-topbar .fi-topbar-item,
-                    .fi-header .fi-header-item,
                     .fi-navbar .fi-navbar-item,
                     .fi-sidebar-header .fi-sidebar-header-heading {
                         color: white !important;
+                    }
+
+                    /* Flechas de abrir/cerrar sidebar — blancas */
+                    .fi-sidebar-header .fi-icon-btn,
+                    .fi-sidebar-header .fi-icon-btn-icon,
+                    .fi-topbar-open-sidebar-btn,
+                    .fi-topbar-open-sidebar-btn .fi-icon-btn-icon,
+                    .fi-topbar-close-sidebar-btn,
+                    .fi-topbar-close-sidebar-btn .fi-icon-btn-icon {
+                        color: white !important;
+                    }
+
+                    .fi-sidebar-header .fi-icon-btn svg,
+                    .fi-topbar-open-sidebar-btn svg,
+                    .fi-topbar-close-sidebar-btn svg {
+                        stroke: white !important;
+                        color: white !important;
+                    }
+
+                    .fi-sidebar-header .fi-icon-btn:hover {
+                        background-color: rgba(255,255,255,0.15) !important;
+                    }
+
+                    /* Encabezado de página: sin fondo dorado, título grande */
+                    .fi-header {
+                        background: transparent !important;
+                    }
+
+                    .fi-header-heading {
+                        font-size: 2.25rem !important;
+                        font-weight: 800 !important;
+                        color: #111827 !important;
                     }
 
                     /* Logo o título del sistema */

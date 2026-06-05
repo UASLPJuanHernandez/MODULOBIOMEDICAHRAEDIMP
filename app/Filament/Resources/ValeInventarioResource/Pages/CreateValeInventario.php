@@ -17,6 +17,14 @@ class CreateValeInventario extends CreateRecord
         return DocumentosGenerados::getUrl();
     }
 
+    public function getBreadcrumbs(): array
+    {
+        return [
+            DocumentosGenerados::getUrl() => 'Documentos Generados',
+            'Nuevo Vale',
+        ];
+    }
+
     public function mount(): void
     {
         parent::mount();

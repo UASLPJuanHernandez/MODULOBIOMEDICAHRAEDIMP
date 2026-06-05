@@ -41,7 +41,7 @@
         /* ── Contenido — margen suficiente para no quedar bajo header/footer ── */
         .content {
             margin-top: 160px;
-            margin-bottom: 140px;
+            margin-bottom: 180px;
             padding: 0 32px;
         }
 
@@ -60,10 +60,11 @@
         table.data tr:nth-child(even) td { background: #f0f0f0; }
         .label-col { width: 180px; }
 
-        .signatures { margin-top: 52px; display: flex; justify-content: space-around; page-break-inside: avoid; }
-        .sig-box { width: 42%; text-align: center; }
-        .sig-area { height: 70px; display: flex; align-items: center; justify-content: center; }
-        .sig-line { border-top: 1px solid #000000; padding-top: 6px; margin-top: 6px; font-size: 9pt; font-weight: bold; font-style: italic; }
+        .signatures { margin-top: 52px; width: 100%; page-break-inside: avoid; }
+        .signatures table { width: 100%; border-collapse: collapse; }
+        .sig-box { width: 45%; text-align: center; vertical-align: bottom; padding: 0 10px; }
+        .sig-area { height: 70px; }
+        .sig-line { border-top: 1px solid #000000; padding-top: 6px; font-size: 9pt; font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
@@ -199,42 +200,47 @@
     @endphp
 
     <div class="signatures">
-        <div class="sig-box">
-            <div class="sig-area">
-                @if($firmaEnt['type'] === 'img')
-                    <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
-                @elseif($firmaEnt['type'] === 'svg')
-                    <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaEnt['content'] !!}</div>
-                @endif
-            </div>
-            <div class="sig-line">
-                ENTREGA<br>
-                <span style="font-weight:normal;">
-                    @if($vale->nombre_entrega)
-                        {{ $vale->nombre_entrega }}
-                        @if($vale->cargo_entrega)<br>{{ $vale->cargo_entrega }}@endif
-                    @else
-                        Ingeniería Biomédica
-                    @endif
-                </span>
-            </div>
-        </div>
-        <div class="sig-box">
-            <div class="sig-area">
-                @if($firmaRec['type'] === 'img')
-                    <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
-                @elseif($firmaRec['type'] === 'svg')
-                    <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaRec['content'] !!}</div>
-                @endif
-            </div>
-            <div class="sig-line">
-                RECIBE<br>
-                <span style="font-weight:normal;">{{ $vale->quien_recibe ?: ($vale->area ?: 'Área correspondiente') }}</span>
-                @if($vale->cargo_recibe)
-                    <br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>
-                @endif
-            </div>
-        </div>
+        <table>
+            <tr>
+                <td class="sig-box">
+                    <div class="sig-area">
+                        @if($firmaEnt['type'] === 'img')
+                            <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
+                        @elseif($firmaEnt['type'] === 'svg')
+                            <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaEnt['content'] !!}</div>
+                        @endif
+                    </div>
+                    <div class="sig-line">
+                        ENTREGA<br>
+                        <span style="font-weight:normal;">
+                            @if($vale->nombre_entrega)
+                                {{ $vale->nombre_entrega }}
+                                @if($vale->cargo_entrega)<br>{{ $vale->cargo_entrega }}@endif
+                            @else
+                                Ingeniería Biomédica
+                            @endif
+                        </span>
+                    </div>
+                </td>
+                <td style="width:10%;"></td>
+                <td class="sig-box">
+                    <div class="sig-area">
+                        @if($firmaRec['type'] === 'img')
+                            <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
+                        @elseif($firmaRec['type'] === 'svg')
+                            <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaRec['content'] !!}</div>
+                        @endif
+                    </div>
+                    <div class="sig-line">
+                        RECIBE<br>
+                        <span style="font-weight:normal;">{{ $vale->quien_recibe ?: ($vale->area ?: 'Área correspondiente') }}</span>
+                        @if($vale->cargo_recibe)
+                            <br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
 </div>{{-- /content --}}

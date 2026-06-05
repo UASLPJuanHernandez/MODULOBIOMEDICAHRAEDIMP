@@ -109,6 +109,8 @@ class InventarioEquipoController extends Controller
 
     public function historialPdf(InventarioEquipo $equipo)
     {
+        ini_set('memory_limit', '512M');
+
         $historiales = $equipo->historiales()->orderBy('created_at', 'desc')->get();
 
         $pdf = Pdf::loadView('pdf.historial-inventario', [
@@ -122,6 +124,8 @@ class InventarioEquipoController extends Controller
 
     public function historialGeneralPdf(Request $request)
     {
+        ini_set('memory_limit', '512M');
+
         $query = InventarioEquipoHistorial::with('inventarioEquipo')->latest();
 
         if ($request->filled('tipo'))  $query->where('tipo_evento', $request->tipo);

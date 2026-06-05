@@ -110,6 +110,7 @@ class InventarioEquipoController extends Controller
     public function historialPdf(InventarioEquipo $equipo)
     {
         ini_set('memory_limit', '512M');
+        set_time_limit(120);
 
         $historiales = $equipo->historiales()->orderBy('created_at', 'desc')->get();
 
@@ -119,12 +120,17 @@ class InventarioEquipoController extends Controller
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i:s'),
         ])->setPaper('A4', 'portrait');
 
-        return $pdf->download('historial-inventario-' . $this->slug($equipo) . '.pdf');
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'historial-inventario-' . $this->slug($equipo) . '.pdf', [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     public function historialGeneralPdf(Request $request)
     {
         ini_set('memory_limit', '512M');
+        set_time_limit(120);
 
         $query = InventarioEquipoHistorial::with('inventarioEquipo')->latest();
 
@@ -142,7 +148,12 @@ class InventarioEquipoController extends Controller
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i:s'),
         ])->setPaper('A4', 'portrait');
 
-        return $pdf->download('historial-general-inventario-' . Carbon::now()->format('Y-m-d') . '.pdf');
+        $nombre = 'historial-general-inventario-' . Carbon::now()->format('Y-m-d') . '.pdf';
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, $nombre, [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ class AuditoriaController extends Controller
     public function exportarPdf(Request $request)
     {
         abort_unless(auth()->check(), 403);
+        set_time_limit(0);
 
         $desde = $request->query('desde');
         $hasta = $request->query('hasta');

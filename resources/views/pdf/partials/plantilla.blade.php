@@ -255,8 +255,7 @@
     @endphp
     <div class="plantilla-header">
         @if(file_exists($headerPath))
-            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($headerPath)) }}"
-                 alt="Hospital Regional Alta Especialidad Dr. Ignacio Morones Prieto">
+            <img src="{{ $headerPath }}" alt="Hospital Regional Alta Especialidad Dr. Ignacio Morones Prieto">
         @endif
     </div>
 
@@ -278,7 +277,7 @@
     <div class="plantilla-footer">
         @if(file_exists($footerPath))
             <img class="plantilla-footer-img"
-                 src="data:image/png;base64,{{ base64_encode(file_get_contents($footerPath)) }}"
+                 src="{{ $footerPath }}"
                  alt="2026 año de Margarita Maza">
         @endif
         <div class="plantilla-footer-texto">

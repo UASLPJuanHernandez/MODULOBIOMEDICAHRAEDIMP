@@ -109,27 +109,34 @@ class InventarioEquipoController extends Controller
 
     public function historialPdf(InventarioEquipo $equipo)
     {
-        ini_set('memory_limit', '512M');
         set_time_limit(120);
 
         $historiales = $equipo->historiales()->orderBy('created_at', 'desc')->get();
 
+        // Generar PDF completo primero
         $pdf = Pdf::loadView('pdf.historial-inventario', [
             'equipo'          => $equipo,
             'historiales'     => $historiales,
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i:s'),
         ])->setPaper('A4', 'portrait');
 
+        $contenido = $pdf->output();
+
+        if (empty($contenido)) {
+            abort(500, 'No se pudo generar el PDF.');
+        }
+
         $tmp = tempnam(sys_get_temp_dir(), 'hist_') . '.pdf';
-        $pdf->save($tmp);
+        file_put_contents($tmp, $contenido);
+
         return response()->download($tmp, 'historial-inventario-' . $this->slug($equipo) . '.pdf', [
-            'Content-Type' => 'application/pdf',
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment',
         ])->deleteFileAfterSend(true);
     }
 
     public function historialGeneralPdf(Request $request)
     {
-        ini_set('memory_limit', '512M');
         set_time_limit(120);
 
         $query = InventarioEquipoHistorial::with('inventarioEquipo')->latest();
@@ -139,8 +146,11 @@ class InventarioEquipoController extends Controller
         if ($request->filled('hasta')) $query->whereDate('created_at', '<=', $request->hasta);
         if ($request->boolean('hoy'))  $query->whereDate('created_at', today());
 
+        $historiales = $query->get();
+
+        // Generar PDF completo primero
         $pdf = Pdf::loadView('pdf.historial-general-inventario', [
-            'historiales'     => $query->get(),
+            'historiales'     => $historiales,
             'filtros'         => [
                 'desde' => $request->filled('desde') ? Carbon::parse($request->desde)->format('d/m/Y') : null,
                 'hasta' => $request->filled('hasta') ? Carbon::parse($request->hasta)->format('d/m/Y') : null,
@@ -148,11 +158,19 @@ class InventarioEquipoController extends Controller
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i:s'),
         ])->setPaper('A4', 'portrait');
 
+        $contenido = $pdf->output();
+
+        if (empty($contenido)) {
+            abort(500, 'No se pudo generar el PDF.');
+        }
+
         $nombre = 'historial-general-inventario-' . Carbon::now()->format('Y-m-d') . '.pdf';
         $tmp = tempnam(sys_get_temp_dir(), 'histgen_') . '.pdf';
-        $pdf->save($tmp);
+        file_put_contents($tmp, $contenido);
+
         return response()->download($tmp, $nombre, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment',
         ])->deleteFileAfterSend(true);
     }
 

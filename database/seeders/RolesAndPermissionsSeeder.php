@@ -6,8 +6,6 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -66,71 +64,25 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Crear roles y asignar permisos
-        
-        // Administrador (Jefe de Activo Fijo)
-        $adminRole = Role::create(['name' => 'Administrador']);
+        $adminRole = Role::firstOrCreate(['name' => 'Administrador']);
         $adminRole->givePermissionTo(Permission::all());
 
-        // Personal de Apoyo
-        $staffRole = Role::create(['name' => 'Personal de Apoyo']);
+        $staffRole = Role::firstOrCreate(['name' => 'Personal de Apoyo']);
         $staffRole->givePermissionTo([
-            'view mobiliario',
-            'create mobiliario',
-            'edit mobiliario',
-            'generate qr mobiliario',
-            'view movimientos',
-            'create movimientos',
-            'edit movimientos',
-            'view vales',
-            'create vales',
-            'generate vales',
-            'view ordenes servicio',
-            'create ordenes servicio',
-            'edit ordenes servicio',
-            'generate ordenes servicio',
-            'view reportes',
-            'generate reportes',
-            'export reportes',
-            'view dashboard',
+            'view mobiliario', 'create mobiliario', 'edit mobiliario', 'generate qr mobiliario',
+            'view movimientos', 'create movimientos', 'edit movimientos',
+            'view vales', 'create vales', 'generate vales',
+            'view ordenes servicio', 'create ordenes servicio', 'edit ordenes servicio', 'generate ordenes servicio',
+            'view reportes', 'generate reportes', 'export reportes', 'view dashboard',
         ]);
 
-        // Jefe de Área
-        $areaRole = Role::create(['name' => 'Jefe de Área']);
+        $areaRole = Role::firstOrCreate(['name' => 'Jefe de Área']);
         $areaRole->givePermissionTo([
-            'view mobiliario',
-            'view movimientos',
-            'view vales',
-            'view ordenes servicio',
-            'view reportes',
-            'view dashboard',
+            'view mobiliario', 'view movimientos', 'view vales',
+            'view ordenes servicio', 'view reportes', 'view dashboard',
         ]);
-
-        // Crear usuario administrador por defecto
-        $admin = User::create([
-            'name' => 'Administrador Sistema',
-            'email' => 'admin@inventario.hospital',
-            'password' => Hash::make('admin123'),
-        ]);
-        $admin->assignRole('Administrador');
-
-        // Crear usuario de apoyo por defecto
-        $staff = User::create([
-            'name' => 'Personal de Apoyo',
-            'email' => 'apoyo@inventario.hospital',
-            'password' => Hash::make('apoyo123'),
-        ]);
-        $staff->assignRole('Personal de Apoyo');
-
-        // Crear usuario jefe de área por defecto
-        $area = User::create([
-            'name' => 'Jefe de Área',
-            'email' => 'jefe@inventario.hospital',
-            'password' => Hash::make('jefe123'),
-        ]);
-        $area->assignRole('Jefe de Área');
     }
 }

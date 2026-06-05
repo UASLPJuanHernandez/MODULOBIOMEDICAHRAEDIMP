@@ -39,7 +39,7 @@ class MantenimientoResource extends Resource
     
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador']) ?? false;
+        return false;
     }
     
     public static function canViewAny(): bool

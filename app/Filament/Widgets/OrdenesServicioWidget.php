@@ -64,6 +64,6 @@ class OrdenesServicioWidget extends BaseWidget
 
     public static function canView(): bool
     {
-        return auth()->user()?->hasRole(['Personal de Mantenimiento', 'Administrador']) ?? false;
+        return false;
     }
 }

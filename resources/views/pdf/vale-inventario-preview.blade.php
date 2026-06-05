@@ -21,20 +21,20 @@
             font-style: italic;
         }
 
-        /* ── Imagen de encabezado fija en la parte superior de cada página ── */
+        /* ── Encabezado: negativo para quedar en el área reservada por @page ── */
         .page-header {
             position: fixed;
-            top: 10px;
+            top: -150px;
             left: 24px;
             right: 24px;
             width: auto;
         }
         .page-header img { width: 100%; display: block; }
 
-        /* ── Imagen de pie fija en la parte inferior de cada página ── */
+        /* ── Pie: negativo para quedar en el área reservada por @page ── */
         .page-footer {
             position: fixed;
-            bottom: 10px;
+            bottom: -135px;
             left: 24px;
             right: 24px;
             width: auto;

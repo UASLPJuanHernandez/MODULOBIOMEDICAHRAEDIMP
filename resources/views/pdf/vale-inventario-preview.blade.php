@@ -62,9 +62,10 @@
 
         .signatures { margin-top: 52px; width: 100%; page-break-inside: avoid; }
         .signatures table { width: 100%; border-collapse: collapse; }
-        .sig-box { width: 45%; text-align: center; vertical-align: bottom; padding: 0 10px; }
-        .sig-area { height: 70px; }
-        .sig-line { border-top: 1px solid #000000; padding-top: 6px; font-size: 9pt; font-weight: bold; font-style: italic; }
+        .sig-box { width: 45%; text-align: center; vertical-align: top; padding: 0 10px; }
+        .sig-area { height: 70px; min-height: 70px; border-bottom: none; }
+        .sig-spacer { display: block; height: 70px; width: 100%; }
+        .sig-line { border-top: 2px solid #000000; padding-top: 6px; margin-top: 4px; font-size: 9pt; font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
@@ -208,6 +209,8 @@
                             <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
                         @elseif($firmaEnt['type'] === 'svg')
                             <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaEnt['content'] !!}</div>
+                        @else
+                            <span class="sig-spacer"></span>
                         @endif
                     </div>
                     <div class="sig-line">
@@ -229,6 +232,8 @@
                             <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
                         @elseif($firmaRec['type'] === 'svg')
                             <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaRec['content'] !!}</div>
+                        @else
+                            <span class="sig-spacer"></span>
                         @endif
                     </div>
                     <div class="sig-line">

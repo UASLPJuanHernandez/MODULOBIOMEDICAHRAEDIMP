@@ -64,7 +64,7 @@ class Auditorias extends Page
             $logQuery->whereDate('created_at', '<=', $this->fechaHasta);
         }
 
-        $auditLogs = $logQuery->latest()->limit(500)->get();
+        $auditLogs = $logQuery->latest()->get();
 
         // ── Historial de equipos (con filtros de fecha y búsqueda) ───────────
         $histQuery = InventarioEquipoHistorial::with('inventarioEquipo:id,numero_inventario,equipo,area')
@@ -84,7 +84,7 @@ class Auditorias extends Page
             );
         }
 
-        $historialEquipos = $histQuery->limit(400)->get();
+        $historialEquipos = $histQuery->get();
 
         // ── Stats filtrados ───────────────────────────────────────────────────
         $desde = $this->fechaDesde ?: null;
@@ -139,7 +139,7 @@ class Auditorias extends Page
         if ($this->fechaDesde !== '') $fValeQ->whereDate('firmado_at', '>=', $this->fechaDesde);
         if ($this->fechaHasta !== '') $fValeQ->whereDate('firmado_at', '<=', $this->fechaHasta);
 
-        $fVale = $fValeQ->limit(200)
+        $fVale = $fValeQ
             ->get(['id','tipo','equipo_nombre','numero_inventario','area','jefe_id','firmado_at','estado'])
             ->map(fn ($v) => [
                 'tipo_doc'  => $v->tipo === 'entrega' ? 'Vale entrega' : 'Vale retiro',
@@ -154,7 +154,7 @@ class Auditorias extends Page
         if ($this->fechaDesde !== '') $fSolQ->whereDate('firmado_at', '>=', $this->fechaDesde);
         if ($this->fechaHasta !== '') $fSolQ->whereDate('firmado_at', '<=', $this->fechaHasta);
 
-        $fSol = $fSolQ->limit(200)->get()
+        $fSol = $fSolQ->get()
             ->map(function ($s) {
                 $jefe = PersonalReportante::find($s->personal_reportante_id);
                 return [
@@ -173,7 +173,7 @@ class Auditorias extends Page
         if ($this->fechaDesde !== '') $fRegQ->whereDate('firmado_at', '>=', $this->fechaDesde);
         if ($this->fechaHasta !== '') $fRegQ->whereDate('firmado_at', '<=', $this->fechaHasta);
 
-        $fReg = $fRegQ->limit(200)->get()
+        $fReg = $fRegQ->get()
             ->map(fn ($r) => [
                 'tipo_doc'  => 'Registro',
                 'documento' => $r->formato?->nombre ?? 'Registro #' . $r->id,
@@ -204,7 +204,7 @@ class Auditorias extends Page
             $valesQuery->whereDate('created_at', '<=', $this->fechaHasta);
         }
 
-        $vales = $valesQuery->limit(300)
+        $vales = $valesQuery
             ->get(['id','tipo','equipo_nombre','numero_inventario','area','usuario_nombre','jefe_id','estado','created_at','firmado_at']);
 
         // ── Usuarios ─────────────────────────────────────────────────────────

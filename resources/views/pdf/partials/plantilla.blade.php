@@ -250,13 +250,17 @@
 <body>
 
     {{-- ── ENCABEZADO ── --}}
-    @php
-        $headerPath = public_path('images/plantilla/encabezado.jpg');
-    @endphp
-    <div class="plantilla-header">
-        @if(file_exists($headerPath))
-            <img src="{{ $headerPath }}" alt="Hospital Regional Alta Especialidad Dr. Ignacio Morones Prieto">
-        @endif
+    <div class="plantilla-header" style="border-bottom:2px solid #7B3A2A; padding-bottom:8px; margin-bottom:10px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="font-size:13px; font-weight:bold; font-style:italic;">
+                    Hospital Regional de Alta Especialidad Dr. Ignacio Morones Prieto
+                </td>
+                <td style="text-align:right; font-size:10px; color:#555;">
+                    Ingeniería Biomédica
+                </td>
+            </tr>
+        </table>
     </div>
 
     {{-- ── TÍTULO Y FECHA ── --}}
@@ -271,15 +275,7 @@
     </div>
 
     {{-- ── PIE DE PÁGINA FIJO ── --}}
-    @php
-        $footerPath = public_path('images/plantilla/pie-pagina.png');
-    @endphp
     <div class="plantilla-footer">
-        @if(file_exists($footerPath))
-            <img class="plantilla-footer-img"
-                 src="{{ $footerPath }}"
-                 alt="2026 año de Margarita Maza">
-        @endif
         <div class="plantilla-footer-texto">
             ☎ 2809-24556100 &nbsp;|&nbsp; Av. Venustiano Carranza N° 2395, Zona Universitaria, 78290 San Luis Potosí, S.L.P.
         </div>

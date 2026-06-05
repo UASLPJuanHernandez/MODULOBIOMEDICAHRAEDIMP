@@ -6,13 +6,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @page {
-            margin-top: 160px;
-            margin-bottom: 145px;
-            margin-left: 0;
-            margin-right: 0;
-        }
-
         body {
             font-family: "Times New Roman", Times, serif;
             font-size: 10pt;
@@ -21,20 +14,20 @@
             font-style: italic;
         }
 
-        /* ── Encabezado: negativo para quedar en el área reservada por @page ── */
+        /* ── Imagen de encabezado fija en la parte superior de cada página ── */
         .page-header {
             position: fixed;
-            top: -150px;
+            top: 10px;
             left: 24px;
             right: 24px;
             width: auto;
         }
         .page-header img { width: 100%; display: block; }
 
-        /* ── Pie: negativo para quedar en el área reservada por @page ── */
+        /* ── Imagen de pie fija en la parte inferior de cada página ── */
         .page-footer {
             position: fixed;
-            bottom: -135px;
+            bottom: 10px;
             left: 24px;
             right: 24px;
             width: auto;
@@ -45,8 +38,10 @@
         .page-footer img { width: 100%; display: block; }
         .page-footer-text { padding: 4px 32px 0; border-top: 1px solid #000000; }
 
-        /* ── Contenido — @page maneja top/bottom, padding maneja laterales ── */
+        /* ── Contenido — margen suficiente para no quedar bajo header/footer ── */
         .content {
+            margin-top: 160px;
+            margin-bottom: 180px;
             padding: 0 32px;
         }
 
@@ -67,10 +62,9 @@
 
         .signatures { margin-top: 52px; width: 100%; page-break-inside: avoid; }
         .signatures table { width: 100%; border-collapse: collapse; }
-        .sig-box { width: 45%; text-align: center; vertical-align: top; padding: 0 10px; }
-        .sig-area { height: 70px; min-height: 70px; border-bottom: none; }
-        .sig-spacer { display: block; height: 70px; width: 100%; }
-        .sig-line { border-top: 2px solid #000000; padding-top: 6px; margin-top: 4px; font-size: 9pt; font-weight: bold; font-style: italic; }
+        .sig-box { width: 45%; text-align: center; vertical-align: bottom; padding: 0 10px; }
+        .sig-area { height: 70px; }
+        .sig-line { border-top: 1px solid #000000; padding-top: 6px; font-size: 9pt; font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
@@ -205,46 +199,49 @@
         $firmaRec = $parseFirma($vale->firma_imagen);
     @endphp
 
-    {{-- FIRMAS --}}
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:50px; page-break-inside:avoid;">
-        <tr>
-            <td width="45%" style="text-align:center; padding:0 10px;">
-                <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr><td style="height:70px; text-align:center; vertical-align:middle;">
+    <div class="signatures">
+        <table>
+            <tr>
+                <td class="sig-box">
+                    <div class="sig-area">
                         @if($firmaEnt['type'] === 'img')
                             <img src="{{ $firmaEnt['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
                         @elseif($firmaEnt['type'] === 'svg')
-                            {!! $firmaEnt['content'] !!}
+                            <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaEnt['content'] !!}</div>
                         @endif
-                    </td></tr>
-                    <tr><td style="border-top:2px solid #000000; padding-top:6px; font-size:9pt; font-weight:bold; font-style:italic; text-align:center;">
+                    </div>
+                    <div class="sig-line">
                         ENTREGA<br>
                         <span style="font-weight:normal;">
-                            @if($vale->nombre_entrega){{ $vale->nombre_entrega }}@if($vale->cargo_entrega)<br>{{ $vale->cargo_entrega }}@endif
-                            @else Ingeniería Biomédica @endif
+                            @if($vale->nombre_entrega)
+                                {{ $vale->nombre_entrega }}
+                                @if($vale->cargo_entrega)<br>{{ $vale->cargo_entrega }}@endif
+                            @else
+                                Ingeniería Biomédica
+                            @endif
                         </span>
-                    </td></tr>
-                </table>
-            </td>
-            <td width="10%"></td>
-            <td width="45%" style="text-align:center; padding:0 10px;">
-                <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr><td style="height:70px; text-align:center; vertical-align:middle;">
+                    </div>
+                </td>
+                <td style="width:10%;"></td>
+                <td class="sig-box">
+                    <div class="sig-area">
                         @if($firmaRec['type'] === 'img')
                             <img src="{{ $firmaRec['content'] }}" style="max-height:60px;max-width:100%;" alt="Firma">
                         @elseif($firmaRec['type'] === 'svg')
-                            {!! $firmaRec['content'] !!}
+                            <div style="height:60px;max-width:100%;overflow:hidden;">{!! $firmaRec['content'] !!}</div>
                         @endif
-                    </td></tr>
-                    <tr><td style="border-top:2px solid #000000; padding-top:6px; font-size:9pt; font-weight:bold; font-style:italic; text-align:center;">
+                    </div>
+                    <div class="sig-line">
                         RECIBE<br>
                         <span style="font-weight:normal;">{{ $vale->quien_recibe ?: ($vale->area ?: 'Área correspondiente') }}</span>
-                        @if($vale->cargo_recibe)<br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>@endif
-                    </td></tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+                        @if($vale->cargo_recibe)
+                            <br><span style="font-weight:normal;">{{ $vale->cargo_recibe }}</span>
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
 </div>{{-- /content --}}
 

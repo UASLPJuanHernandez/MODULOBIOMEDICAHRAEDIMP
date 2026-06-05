@@ -6,6 +6,13 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        @page {
+            margin-top: 165px;
+            margin-bottom: 145px;
+            margin-left: 24px;
+            margin-right: 24px;
+        }
+
         body {
             font-family: "Times New Roman", Times, serif;
             font-size: 10pt;
@@ -17,9 +24,9 @@
         /* ── Imagen de encabezado fija en la parte superior de cada página ── */
         .page-header {
             position: fixed;
-            top: 10px;
-            left: 24px;
-            right: 24px;
+            top: -155px;
+            left: 0;
+            right: 0;
             width: auto;
         }
         .page-header img { width: 100%; display: block; }
@@ -27,10 +34,9 @@
         /* ── Imagen de pie fija en la parte inferior de cada página ── */
         .page-footer {
             position: fixed;
-            bottom: 10px;
-            left: 24px;
-            right: 24px;
-            width: auto;
+            bottom: -135px;
+            left: 0;
+            right: 0;
             text-align: center;
             font-size: 8pt;
             color: #000000;
@@ -38,11 +44,9 @@
         .page-footer img { width: 100%; display: block; }
         .page-footer-text { padding: 4px 32px 0; border-top: 1px solid #000000; }
 
-        /* ── Contenido — margen suficiente para no quedar bajo header/footer ── */
+        /* ── Contenido — sin margin, @page ya lo maneja ── */
         .content {
-            margin-top: 160px;
-            margin-bottom: 180px;
-            padding: 0 32px;
+            padding: 0;
         }
 
         .doc-header { border-bottom: 2px solid #000000; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; }

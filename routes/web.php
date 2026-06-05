@@ -135,6 +135,20 @@ Route::middleware('auth')->group(function () {
 
 });
 
+// PDF de registro de formato (admin)
+Route::get('/admin/registro/{registro}/pdf', function (\App\Models\Registro $registro) {
+    abort_unless(auth()->check(), 403);
+    $formato = $registro->formato;
+    abort_unless($formato && \Illuminate\Support\Facades\Storage::disk('local')->exists($formato->archivo_path), 404);
+    $registro->load('formato');
+    $pdf = (new \App\Services\RegistroOverlayService())->stream($registro);
+    return response($pdf, 200, [
+        'Content-Type'        => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="registro-' . $registro->id . '.pdf"',
+        'Cache-Control'       => 'no-cache',
+    ]);
+})->name('admin.registro.pdf')->middleware('auth');
+
 // Historial de cambios del inventario de equipos (PDF individual)
 Route::get('/inventario-equipo/{equipo}/historial-pdf', [App\Http\Controllers\InventarioEquipoController::class, 'historialPdf'])
     ->name('inventario.equipo.historial.pdf')

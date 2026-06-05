@@ -7,10 +7,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         @page {
-            margin-top: 165px;
+            margin-top: 160px;
             margin-bottom: 145px;
-            margin-left: 24px;
-            margin-right: 24px;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         body {
@@ -24,9 +24,9 @@
         /* ── Imagen de encabezado fija en la parte superior de cada página ── */
         .page-header {
             position: fixed;
-            top: -155px;
-            left: 0;
-            right: 0;
+            top: 10px;
+            left: 24px;
+            right: 24px;
             width: auto;
         }
         .page-header img { width: 100%; display: block; }
@@ -34,9 +34,10 @@
         /* ── Imagen de pie fija en la parte inferior de cada página ── */
         .page-footer {
             position: fixed;
-            bottom: -135px;
-            left: 0;
-            right: 0;
+            bottom: 10px;
+            left: 24px;
+            right: 24px;
+            width: auto;
             text-align: center;
             font-size: 8pt;
             color: #000000;
@@ -44,9 +45,9 @@
         .page-footer img { width: 100%; display: block; }
         .page-footer-text { padding: 4px 32px 0; border-top: 1px solid #000000; }
 
-        /* ── Contenido — sin margin, @page ya lo maneja ── */
+        /* ── Contenido — @page maneja top/bottom, padding maneja laterales ── */
         .content {
-            padding: 0;
+            padding: 0 32px;
         }
 
         .doc-header { border-bottom: 2px solid #000000; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; }

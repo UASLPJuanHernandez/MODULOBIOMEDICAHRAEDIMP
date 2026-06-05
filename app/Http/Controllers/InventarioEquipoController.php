@@ -120,11 +120,11 @@ class InventarioEquipoController extends Controller
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i:s'),
         ])->setPaper('A4', 'portrait');
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        }, 'historial-inventario-' . $this->slug($equipo) . '.pdf', [
+        $tmp = tempnam(sys_get_temp_dir(), 'hist_') . '.pdf';
+        $pdf->save($tmp);
+        return response()->download($tmp, 'historial-inventario-' . $this->slug($equipo) . '.pdf', [
             'Content-Type' => 'application/pdf',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     public function historialGeneralPdf(Request $request)
@@ -149,11 +149,11 @@ class InventarioEquipoController extends Controller
         ])->setPaper('A4', 'portrait');
 
         $nombre = 'historial-general-inventario-' . Carbon::now()->format('Y-m-d') . '.pdf';
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        }, $nombre, [
+        $tmp = tempnam(sys_get_temp_dir(), 'histgen_') . '.pdf';
+        $pdf->save($tmp);
+        return response()->download($tmp, $nombre, [
             'Content-Type' => 'application/pdf',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
